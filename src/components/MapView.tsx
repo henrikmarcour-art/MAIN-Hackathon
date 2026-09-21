@@ -8,45 +8,61 @@ import {
   type Venue,
 } from "@/data/events";
 
-const STYLE_URL =
-  "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+const STYLE_URL_LIGHT = "https://tiles.openfreemap.org/styles/positron";
+const STYLE_URL_NIGHT = "https://tiles.openfreemap.org/styles/dark";
 
 type Props = {
   venues: Venue[];
   selectedId: string | null;
   goingIds: Set<string>;
   onSelect: (id: string) => void;
-  /** Tap on the empty map (not a marker) */
   onMapClick: () => void;
-  /** Fly to this id when it changes (used after accepting an invite) */
   focusId: string | null;
+  theme: "light" | "night";
+  showRadar: boolean;
 };
 
-function markerColor(v: Venue) {
-  if (v.isPrivate) return "#6f56ff";
-  if (v.busy) return "#ff7a1a";
-  return "#c6f432";
+function markerBg(v: Venue) {
+  if (v.isPrivate) return "var(--color-violet)";
+  return "var(--color-cobalt)";
 }
 
-function badgeText(v: Venue) {
-  return v.isPrivate || v.busy ? "#ffffff" : "#1c1c1e";
+function markerText() {
+  return "#ffffff";
 }
 
-function buildMarkerEl(v: Venue, count: number, active: boolean) {
+function buildMarkerEl(
+  v: Venue, 
+  count: number, 
+  active: boolean, 
+  isHottest: boolean, 
+  showRadar: boolean
+) {
   const el = document.createElement("button");
   el.type = "button";
-  el.className = "mn-marker" + (active ? " is-active" : "");
+  
+  const scale = Math.min(1, Math.sqrt(count) / Math.sqrt(210));
+  const size = 34 + scale * (62 - 34);
+  const haloSize = size + 12 + scale * 24;
+
+  let className = "mn-marker";
+  if (active) className += " is-active";
+  if (isHottest) className += " is-hottest";
+  
+  el.className = className;
   el.setAttribute("aria-label", `${v.name}, ${count} going`);
-  el.style.setProperty("--pin-color", markerColor(v));
-  el.style.setProperty("--pin-badge-text", badgeText(v));
-  el.innerHTML = renderMarkerInner(v, count);
+  
+  el.style.setProperty("--marker-size", `${size}px`);
+  el.style.setProperty("--halo-size", `${haloSize}px`);
+  el.style.setProperty("--pin-bg", markerBg(v));
+  el.style.setProperty("--pin-badge-text", markerText());
+
+  el.innerHTML = renderMarkerInner(v, count, showRadar);
   return el;
 }
 
-function renderMarkerInner(v: Venue, count: number) {
-  const rings = v.busy
-    ? `<span class="ring r1"></span><span class="ring r2"></span>`
-    : "";
+function renderMarkerInner(v: Venue, count: number, showRadar: boolean) {
+  const halo = showRadar ? `<span class="halo"></span>` : "";
   const friends = v.friendsGoing.slice(0, 2);
   const inner =
     friends.length > 0
@@ -60,9 +76,9 @@ function renderMarkerInner(v: Venue, count: number) {
   const badge =
     friends.length > 0 ? `<span class="badge">${count}</span>` : "";
   const lock = v.isPrivate
-    ? `<span class="lock"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>`
+    ? `<span class="lock"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>`
     : "";
-  return `${rings}<span class="pin">${inner}</span>${badge}${lock}`;
+  return `${halo}<span class="pin">${inner}</span>${badge}${lock}`;
 }
 
 export default function MapView({
@@ -72,6 +88,8 @@ export default function MapView({
   onSelect,
   onMapClick,
   focusId,
+  theme,
+  showRadar,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -87,8 +105,7 @@ export default function MapView({
     const isMobile = window.innerWidth < 768;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE_URL,
-      // On mobile, sit slightly north so pins fall between the top bar and the nav.
+      style: theme === "light" ? STYLE_URL_LIGHT : STYLE_URL_NIGHT,
       center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
       zoom: isMobile ? 13.6 : 14.6,
       minZoom: 12,
@@ -107,7 +124,15 @@ export default function MapView({
       map.remove();
       mapRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update map style when theme changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setStyle(theme === "light" ? STYLE_URL_LIGHT : STYLE_URL_NIGHT);
+  }, [theme]);
 
   // Sync markers with visible venues + state
   useEffect(() => {
@@ -124,21 +149,45 @@ export default function MapView({
       }
     }
 
+    // Find the hottest event
+    let maxCount = 0;
+    for (const v of venues) {
+      const count = v.goingCount + (goingIds.has(v.id) ? 1 : 0);
+      if (count > maxCount) maxCount = count;
+    }
+
     // Add / update
     for (const v of venues) {
       const count = v.goingCount + (goingIds.has(v.id) ? 1 : 0);
       const active = v.id === selectedId;
+      const isHottest = count === maxCount && count > 10;
+
       const existing = markers.get(v.id);
       if (existing) {
         const el = existing.getElement();
-        el.className = "mn-marker" + (active ? " is-active" : "");
+        
+        let className = "mn-marker";
+        if (active) className += " is-active";
+        if (isHottest) className += " is-hottest";
+        el.className = className;
+        
         el.setAttribute("aria-label", `${v.name}, ${count} going`);
-        el.innerHTML = renderMarkerInner(v, count);
-        // Keep selected marker above others
+        
+        const scale = Math.min(1, Math.sqrt(count) / Math.sqrt(210));
+        const size = 34 + scale * (62 - 34);
+        const haloSize = size + 12 + scale * 24;
+        
+        el.style.setProperty("--marker-size", `${size}px`);
+        el.style.setProperty("--halo-size", `${haloSize}px`);
+        el.style.setProperty("--pin-bg", markerBg(v));
+        el.style.setProperty("--pin-badge-text", markerText(v));
+
+        el.innerHTML = renderMarkerInner(v, count, showRadar);
         el.style.zIndex = active ? "10" : "1";
         continue;
       }
-      const el = buildMarkerEl(v, count, active);
+
+      const el = buildMarkerEl(v, count, active, isHottest, showRadar);
       el.style.zIndex = active ? "10" : "1";
       el.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -149,7 +198,7 @@ export default function MapView({
         .addTo(map);
       markers.set(v.id, marker);
     }
-  }, [venues, selectedId, goingIds]);
+  }, [venues, selectedId, goingIds, showRadar]);
 
   // Ease to a focused venue
   useEffect(() => {

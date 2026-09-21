@@ -31,6 +31,9 @@ export default function Home() {
   const [openInviteId, setOpenInviteId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("map");
 
+  const [theme, setTheme] = useState<"light" | "night">("light");
+  const [showRadar, setShowRadar] = useState(true);
+
   // Private venues are only visible once their invitation is accepted.
   const visibleVenues = useMemo(
     () =>
@@ -121,9 +124,19 @@ export default function Home() {
         onSelect={handleSelect}
         onMapClick={() => setSelectedId(null)}
         focusId={focusId}
+        theme={theme}
+        showRadar={showRadar}
       />
 
-      <TopBar filter={filter} onFilter={handleFilter} totalGoing={totalGoing} />
+      <TopBar 
+        filter={filter} 
+        onFilter={handleFilter} 
+        totalGoing={totalGoing} 
+        theme={theme}
+        onToggleTheme={() => setTheme(t => t === "light" ? "night" : "light")}
+        showRadar={showRadar}
+        onToggleRadar={() => setShowRadar(r => !r)}
+      />
 
       {pendingInvites.length > 0 && tab === "map" && (
         <div className="pointer-events-none absolute inset-x-0 top-[132px] z-20 flex justify-center px-4 md:justify-start md:px-6 md:top-[140px]">

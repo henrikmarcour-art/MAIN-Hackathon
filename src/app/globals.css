@@ -12,6 +12,7 @@
   --color-lime-deep: #9ed10e;
   --color-orange: #ff7a1a;
   --color-violet: #6f56ff;
+  --color-cobalt: #2563eb;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -67,33 +68,42 @@ body {
 /* Social marker */
 /* NOTE: never transition/transform the root — MapLibre positions it via transform. */
 .mn-marker {
-  width: 44px;
-  height: 44px;
+  width: var(--marker-size, 44px);
+  height: var(--marker-size, 44px);
   cursor: pointer;
   background: transparent;
   border: 0;
   padding: 0;
+  display: grid;
+  place-items: center;
 }
 .mn-marker .pin,
 .mn-marker .badge,
 .mn-marker .lock {
-  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 180ms ease;
 }
 .mn-marker:hover .pin {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 .mn-marker.is-active .pin {
   transform: scale(1.16);
+  border-color: var(--color-lime);
 }
 .mn-marker.is-active .badge {
   transform: translate(3px, -3px);
+  border-color: var(--color-lime);
 }
+.mn-marker.is-active .lock {
+  border-color: var(--color-lime);
+}
+
 .mn-marker .pin {
   position: absolute;
-  inset: 0;
+  width: var(--marker-size, 44px);
+  height: var(--marker-size, 44px);
   border-radius: 9999px;
-  background: #fff;
-  border: 2.5px solid var(--pin-color, var(--color-lime));
+  background: var(--pin-bg, var(--color-cobalt));
+  border: 2px solid #fff;
   box-shadow: 0 1px 2px rgba(28, 28, 30, 0.12), 0 6px 16px rgba(28, 28, 30, 0.18);
   display: grid;
   place-items: center;
@@ -103,7 +113,7 @@ body {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--color-graphite);
+  color: var(--pin-badge-text, #fff);
   font-variant-numeric: tabular-nums;
 }
 .mn-marker .pin .avatars {
@@ -126,62 +136,65 @@ body {
 }
 .mn-marker .badge {
   position: absolute;
-  right: -3px;
-  top: -3px;
-  min-width: 18px;
-  height: 18px;
+  right: -4px;
+  top: -4px;
+  min-width: 20px;
+  height: 20px;
   padding: 0 5px;
   border-radius: 9999px;
-  background: var(--pin-color, var(--color-lime));
-  color: var(--pin-badge-text, var(--color-graphite));
+  background: #fff;
+  color: var(--color-graphite);
   font-size: 10px;
   font-weight: 800;
   display: grid;
   place-items: center;
-  border: 2px solid #fff;
+  border: 2px solid var(--pin-bg, var(--color-cobalt));
   font-variant-numeric: tabular-nums;
+  z-index: 2;
 }
-.mn-marker .ring {
+
+/* Subtle Halo */
+.mn-marker .halo {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  width: var(--halo-size, 64px);
+  height: var(--halo-size, 64px);
   border-radius: 9999px;
-  transform: translate(-50%, -50%);
+  background: var(--pin-bg, var(--color-cobalt));
+  opacity: 0.12;
   pointer-events: none;
-  border: 1.5px solid var(--pin-color, var(--color-lime));
-  opacity: 0.35;
+  transition: opacity 200ms ease;
 }
-.mn-marker .ring.r1 {
-  width: 64px;
-  height: 64px;
+.mn-marker.is-hottest .halo {
+  animation: mn-subtle-pulse 3s ease-in-out infinite;
 }
-.mn-marker .ring.r2 {
-  width: 88px;
-  height: 88px;
-  opacity: 0.18;
-  animation: mn-pulse 2.6s ease-out infinite;
-}
-@keyframes mn-pulse {
+
+@keyframes mn-subtle-pulse {
   0% {
-    transform: translate(-50%, -50%) scale(0.86);
-    opacity: 0.28;
+    transform: scale(0.95);
+    opacity: 0.08;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.16;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.18);
-    opacity: 0;
+    transform: scale(0.95);
+    opacity: 0.08;
   }
 }
+
 .mn-marker .lock {
   position: absolute;
-  left: -3px;
-  bottom: -3px;
-  width: 18px;
-  height: 18px;
+  left: -2px;
+  bottom: -2px;
+  width: 20px;
+  height: 20px;
   border-radius: 9999px;
   background: var(--color-violet);
   border: 2px solid #fff;
   display: grid;
   place-items: center;
+  z-index: 2;
 }
 
 @keyframes mn-sheet-in {
