@@ -166,6 +166,25 @@ export default function Home() {
     }, 50);
   }, []);
 
+  /** Hosts can remove the events they created; seeded venues stay put. */
+  const deleteVenue = useCallback((id: string) => {
+    setCreatedVenues((prev) => prev.filter((v) => v.id !== id));
+    setSelectedId((cur) => (cur === id ? null : cur));
+    setFocusId((cur) => (cur === id ? null : cur));
+    setGoingIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setAcceptedVenueIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   const startMapPick = useCallback(() => {
     setSelectedId(null);
     setMapPick(null);
@@ -259,6 +278,11 @@ export default function Home() {
           going={goingIds.has(selected.id)}
           onToggleGoing={() => toggleGoing(selected.id)}
           onClose={() => setSelectedId(null)}
+          onDelete={
+            createdVenues.some((v) => v.id === selected.id)
+              ? () => deleteVenue(selected.id)
+              : undefined
+          }
         />
       )}
 

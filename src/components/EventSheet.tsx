@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { categoryMeta, currentUser, people, type Venue } from "@/data/events";
 import { AvatarStack } from "./Avatar";
 
@@ -8,6 +9,8 @@ type Props = {
   going: boolean;
   onToggleGoing: () => void;
   onClose: () => void;
+  /** Only provided for events the current user hosts. */
+  onDelete?: () => void;
 };
 
 function priceLabel(p: 1 | 2 | 3) {
@@ -19,7 +22,13 @@ export default function EventSheet({
   going,
   onToggleGoing,
   onClose,
+  onDelete,
 }: Props) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Never carry a pending confirmation over to another event.
+  useEffect(() => setConfirmDelete(false), [venue.id]);
+
   const count = venue.goingCount + (going ? 1 : 0);
   const host =
     venue.hostId === currentUser.id
@@ -47,7 +56,7 @@ export default function EventSheet({
   const friendNames = venue.friendsGoing.map((p) => p.name);
   const friendLine =
     friendNames.length === 0
-      ? `${count} going`
+      ? venue.vibe
       : friendNames.length === 1
         ? `${friendNames[0]} is going`
         : `${friendNames.slice(0, 2).join(", ")}${
@@ -162,9 +171,59 @@ export default function EventSheet({
           </div>
 
           {isHost ? (
-            <div className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl bg-graphite text-[15px] font-bold tracking-tight text-lime">
-              You’re hosting
-            </div>
+            confirmDelete && onDelete ? (
+              <div className="mt-4">
+                <p className="text-center text-[13px] font-medium text-graphite-soft">
+                  Delete “{venue.name}”? This removes it from the map.
+                </p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    className="h-12 rounded-2xl bg-surface-2 text-[15px] font-semibold text-graphite-soft hover:bg-line active:scale-[0.98]"
+                  >
+                    Keep it
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    className="h-12 rounded-2xl bg-graphite text-[15px] font-bold text-surface hover:brightness-110 active:scale-[0.98]"
+                  >
+                    Delete event
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 flex items-center gap-2">
+                <div className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-graphite text-[15px] font-bold tracking-tight text-lime">
+                  You’re hosting
+                </div>
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    aria-label={`Delete ${venue.name}`}
+                    title="Delete event"
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-line bg-surface text-graphite-soft hover:bg-surface-2 active:scale-[0.98]"
+                  >
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 7h16M10 11v6M14 11v6" />
+                      <path d="M6 7l1 13h10l1-13" />
+                      <path d="M9 7V4h6v3" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )
           ) : (
             <button
               type="button"

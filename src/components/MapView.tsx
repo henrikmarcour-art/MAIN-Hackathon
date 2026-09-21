@@ -245,7 +245,13 @@ export default function MapView({
         }
         onSelectRef.current(v.id);
       });
-      const marker = new maplibregl.Marker({ element: el, anchor: "center" })
+      // subpixelPositioning stops MapLibre rounding the marker offset to whole
+      // pixels, which otherwise makes pins visibly drift while zooming.
+      const marker = new maplibregl.Marker({
+        element: el,
+        anchor: "center",
+        subpixelPositioning: true,
+      })
         .setLngLat([v.lng, v.lat])
         .addTo(map);
       markers.set(v.id, marker);
@@ -268,6 +274,7 @@ export default function MapView({
       pickMarkerRef.current = new maplibregl.Marker({
         element: el,
         anchor: "bottom",
+        subpixelPositioning: true,
       })
         .setLngLat([pickLngLat.lng, pickLngLat.lat])
         .addTo(map);
