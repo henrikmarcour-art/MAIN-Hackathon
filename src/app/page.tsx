@@ -3,13 +3,21 @@
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { invitations, venues as allVenues } from "@/data/events";
-import TopBar, { type Filter } from "@/components/TopBar";
+import TopBar from "@/components/TopBar";
 import EventSheet from "@/components/EventSheet";
 import BottomNav, { type Tab } from "@/components/BottomNav";
 import ForYouPanel from "@/components/ForYouPanel";
 import CreatePanel from "@/components/CreatePanel";
 import ProfilePanel from "@/components/ProfilePanel";
 import { InviteCard, InviteChip } from "@/components/InviteCard";
+import MapActions from "@/components/map/MapActions";
+import MapModeSheet from "@/components/map/MapModeSheet";
+import DiscoveryRail from "@/components/map/DiscoveryRail";
+import {
+  TRENDING_MIN,
+  type Filter,
+  type MapTheme,
+} from "@/components/map/types";
 
 // MapLibre touches `window`; load it client-side only.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -31,8 +39,11 @@ export default function Home() {
   const [openInviteId, setOpenInviteId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("map");
 
-  const [theme, setTheme] = useState<"light" | "night">("light");
+  // Map UI state
+  const [theme, setTheme] = useState<MapTheme>("light");
   const [showRadar, setShowRadar] = useState(true);
+  const [modeOpen, setModeOpen] = useState(false);
+  const [recenterNonce, setRecenterNonce] = useState(0);
 
   // Private venues are only visible once their invitation is accepted.
   const visibleVenues = useMemo(
@@ -45,10 +56,14 @@ export default function Home() {
 
   const filteredVenues = useMemo(
     () =>
-      visibleVenues.filter((v) =>
-        filter === "all" ? true : v.isPrivate || v.category === filter
-      ),
-    [visibleVenues, filter]
+      visibleVenues.filter((v) => {
+        if (filter === "all") return true;
+        if (filter === "friends") return v.friendsGoing.length > 0;
+        if (filter === "trending")
+          return v.goingCount + (goingIds.has(v.id) ? 1 : 0) >= TRENDING_MIN;
+        return v.isPrivate || v.category === filter;
+      }),
+    [visibleVenues, filter, goingIds]
   );
 
   const selected = useMemo(
@@ -78,6 +93,7 @@ export default function Home() {
     setSelectedId(id);
     setFocusId(id);
     setTab("map");
+    setModeOpen(false);
   }, []);
 
   const handleFilter = useCallback((f: Filter) => {
@@ -115,6 +131,8 @@ export default function Home() {
     setOpenInviteId(null);
   }, [openInvite]);
 
+  const onMap = tab === "map";
+
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-surface-2">
       <MapView
@@ -122,24 +140,38 @@ export default function Home() {
         selectedId={selectedId}
         goingIds={goingIds}
         onSelect={handleSelect}
-        onMapClick={() => setSelectedId(null)}
+        onMapClick={() => {
+          setSelectedId(null);
+          setModeOpen(false);
+        }}
         focusId={focusId}
         theme={theme}
         showRadar={showRadar}
+        recenterNonce={recenterNonce}
       />
 
-      <TopBar 
-        filter={filter} 
-        onFilter={handleFilter} 
-        totalGoing={totalGoing} 
-        theme={theme}
-        onToggleTheme={() => setTheme(t => t === "light" ? "night" : "light")}
-        showRadar={showRadar}
-        onToggleRadar={() => setShowRadar(r => !r)}
+      <TopBar
+        filter={filter}
+        onFilter={handleFilter}
+        venues={visibleVenues}
+        goingIds={goingIds}
+        onPick={handleSelect}
       />
 
-      {pendingInvites.length > 0 && tab === "map" && (
-        <div className="pointer-events-none absolute inset-x-0 top-[132px] z-20 flex justify-center px-4 md:justify-start md:px-6 md:top-[140px]">
+      {onMap && (
+        <MapActions
+          theme={theme}
+          showRadar={showRadar}
+          modeOpen={modeOpen}
+          onOpenMode={() => setModeOpen((o) => !o)}
+          onRecenter={() => setRecenterNonce((n) => n + 1)}
+          onToggleRadar={() => setShowRadar((r) => !r)}
+          className="absolute right-3 top-[calc(max(12px,env(safe-area-inset-top))+112px)] z-20 md:right-6 md:top-[76px]"
+        />
+      )}
+
+      {pendingInvites.length > 0 && onMap && (
+        <div className="pointer-events-none absolute inset-x-0 top-[calc(max(12px,env(safe-area-inset-top))+112px)] z-20 flex justify-center px-14 md:justify-start md:px-6 md:top-[76px]">
           {pendingInvites.map((inv) => {
             const venue = allVenues.find((v) => v.id === inv.venueId);
             if (!venue) return null;
@@ -155,7 +187,16 @@ export default function Home() {
         </div>
       )}
 
-      {tab === "map" && selected && (
+      {onMap && !selected && (
+        <DiscoveryRail
+          venues={filteredVenues}
+          goingIds={goingIds}
+          totalGoing={totalGoing}
+          onPick={handleSelect}
+        />
+      )}
+
+      {onMap && selected && (
         <EventSheet
           venue={selected}
           going={goingIds.has(selected.id)}
@@ -183,6 +224,15 @@ export default function Home() {
       )}
 
       <BottomNav tab={tab} onChange={setTab} />
+
+      <MapModeSheet
+        open={onMap && modeOpen}
+        theme={theme}
+        showRadar={showRadar}
+        onTheme={setTheme}
+        onToggleRadar={() => setShowRadar((r) => !r)}
+        onClose={() => setModeOpen(false)}
+      />
 
       {openInvite && openInviteVenue && (
         <InviteCard

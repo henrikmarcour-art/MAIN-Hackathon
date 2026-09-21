@@ -18,6 +18,7 @@
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   --shadow-float: 0 1px 2px rgba(28, 28, 30, 0.06), 0 8px 24px rgba(28, 28, 30, 0.1);
+  --shadow-control: 0 1px 2px rgba(28, 28, 30, 0.05), 0 4px 14px rgba(28, 28, 30, 0.08);
   --shadow-sheet: 0 -8px 40px rgba(28, 28, 30, 0.14);
 }
 
@@ -65,137 +66,427 @@ body {
   scrollbar-width: none;
 }
 
-/* Social marker */
-/* NOTE: never transition/transform the root — MapLibre positions it via transform. */
+/* ------------------------------------------------------------------ */
+/* Map controls — one surface language for every floating control      */
+/* ------------------------------------------------------------------ */
+.mn-control {
+  background: rgba(250, 248, 244, 0.94);
+  border: 1px solid rgba(230, 226, 217, 0.9);
+  box-shadow: var(--shadow-control);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.mn-live-dot {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--color-lime-deep);
+  box-shadow: 0 0 0 3px rgba(198, 244, 50, 0.28);
+}
+
+/* Discovery chips */
+.mn-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-graphite-soft);
+  background: rgba(250, 248, 244, 0.94);
+  border: 1px solid rgba(230, 226, 217, 0.9);
+  box-shadow: var(--shadow-control);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+  white-space: nowrap;
+}
+.mn-chip:hover {
+  background: var(--color-surface);
+  color: var(--color-graphite);
+}
+.mn-chip.is-active {
+  background: var(--color-graphite);
+  border-color: var(--color-graphite);
+  color: var(--color-surface);
+}
+@media (min-width: 768px) {
+  .mn-chip {
+    height: 40px;
+  }
+}
+
+/* Right-side action stack */
+.mn-action {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  color: var(--color-graphite-soft);
+  background: rgba(250, 248, 244, 0.94);
+  border: 1px solid rgba(230, 226, 217, 0.9);
+  box-shadow: var(--shadow-control);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background-color 140ms ease, color 140ms ease, transform 120ms ease;
+}
+.mn-action:hover {
+  color: var(--color-graphite);
+  background: var(--color-surface);
+}
+.mn-action:active {
+  transform: scale(0.96);
+}
+.mn-action.is-active {
+  background: var(--color-graphite);
+  border-color: var(--color-graphite);
+  color: var(--color-surface);
+}
+.mn-action.is-on {
+  color: var(--color-cobalt);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+/* Switch */
+.mn-switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--color-line);
+  transition: background-color 160ms ease;
+  flex: 0 0 auto;
+}
+.mn-switch.is-on {
+  background: var(--color-graphite);
+}
+.mn-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(28, 28, 30, 0.2);
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mn-switch.is-on .mn-switch-knob {
+  transform: translateX(18px);
+  background: var(--color-lime);
+}
+
+/* Map mode previews — drawn with CSS, no imagery */
+.mn-mode-preview {
+  background-color: #f4f1ea;
+  background-image:
+    linear-gradient(rgba(28, 28, 30, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 28, 30, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 70% 40%, rgba(37, 99, 235, 0.22) 0 8px, transparent 9px),
+    radial-gradient(circle at 30% 65%, rgba(37, 99, 235, 0.18) 0 6px, transparent 7px);
+  background-size: 22px 22px, 22px 22px, 100% 100%, 100% 100%;
+}
+.mn-mode-preview.night {
+  background-color: #1d1f24;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.09) 1px, transparent 1px),
+    radial-gradient(circle at 70% 40%, rgba(96, 165, 250, 0.45) 0 8px, transparent 9px),
+    radial-gradient(circle at 30% 65%, rgba(96, 165, 250, 0.35) 0 6px, transparent 7px);
+}
+.mn-mode-preview::after {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 46%;
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(37, 99, 235, 0.12);
+  transform: rotate(-12deg);
+}
+.mn-mode-preview.night::after {
+  background: rgba(96, 165, 250, 0.22);
+}
+
+/* Preview cards in the discovery rail */
+.mn-card {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  transition: border-color 140ms ease, background-color 140ms ease, transform 120ms ease;
+}
+.mn-card:hover {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: #fff;
+}
+.mn-card:active {
+  transform: scale(0.99);
+}
+
+/* Night basemap: keep attribution legible */
+.mn-map.theme-night .maplibregl-ctrl-attrib {
+  background: rgba(28, 28, 30, 0.7);
+  color: rgba(250, 248, 244, 0.75);
+}
+.mn-map.theme-night .maplibregl-ctrl-attrib a {
+  color: rgba(250, 248, 244, 0.9);
+}
+
+/* ------------------------------------------------------------------ */
+/* Social markers                                                      */
+/* NOTE: never transition/transform the root — MapLibre positions it.  */
+/* ------------------------------------------------------------------ */
 .mn-marker {
-  width: var(--marker-size, 44px);
-  height: var(--marker-size, 44px);
+  --pin: var(--color-cobalt);
+  --pin-ink: #fff;
+  width: var(--size, 40px);
+  height: var(--size, 40px);
   cursor: pointer;
   background: transparent;
   border: 0;
   padding: 0;
-  display: grid;
-  place-items: center;
+  display: block;
+  -webkit-tap-highlight-color: transparent;
+}
+.mn-marker.is-private {
+  --pin: var(--color-violet);
 }
 .mn-marker .pin,
 .mn-marker .badge,
-.mn-marker .lock {
-  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 180ms ease;
-}
-.mn-marker:hover .pin {
-  transform: scale(1.06);
-}
-.mn-marker.is-active .pin {
-  transform: scale(1.16);
-  border-color: var(--color-lime);
-}
-.mn-marker.is-active .badge {
-  transform: translate(3px, -3px);
-  border-color: var(--color-lime);
-}
-.mn-marker.is-active .lock {
-  border-color: var(--color-lime);
+.mn-marker .lock,
+.mn-marker .going {
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms ease;
 }
 
+/* Pin body */
 .mn-marker .pin {
   position: absolute;
-  width: var(--marker-size, 44px);
-  height: var(--marker-size, 44px);
+  inset: 0;
   border-radius: 9999px;
-  background: var(--pin-bg, var(--color-cobalt));
-  border: 2px solid #fff;
-  box-shadow: 0 1px 2px rgba(28, 28, 30, 0.12), 0 6px 16px rgba(28, 28, 30, 0.18);
+  background: var(--pin);
+  color: var(--pin-ink);
+  /* white inner border + restrained shadow */
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(28, 28, 30, 0.14),
+    0 6px 14px rgba(28, 28, 30, 0.16);
   display: grid;
   place-items: center;
   overflow: hidden;
 }
 .mn-marker .pin .count {
-  font-size: 13px;
+  font-size: clamp(12px, calc(var(--size) * 0.32), 16px);
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--pin-badge-text, #fff);
   font-variant-numeric: tabular-nums;
 }
 .mn-marker .pin .avatars {
   display: flex;
 }
 .mn-marker .pin .avatars span {
-  width: 18px;
-  height: 18px;
+  width: calc(var(--size) * 0.42);
+  height: calc(var(--size) * 0.42);
   border-radius: 9999px;
   display: grid;
   place-items: center;
-  font-size: 9px;
+  font-size: calc(var(--size) * 0.2);
   font-weight: 700;
   color: #fff;
-  border: 1.5px solid #fff;
-  margin-left: -6px;
+  box-shadow: 0 0 0 1.5px var(--pin);
+  margin-left: calc(var(--size) * -0.12);
 }
 .mn-marker .pin .avatars span:first-child {
   margin-left: 0;
 }
+
+/* Count badge when avatars occupy the pin */
 .mn-marker .badge {
   position: absolute;
   right: -4px;
   top: -4px;
   min-width: 20px;
   height: 20px;
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 9999px;
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-graphite);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   display: grid;
   place-items: center;
-  border: 2px solid var(--pin-bg, var(--color-cobalt));
+  box-shadow: 0 0 0 1.5px var(--pin), 0 1px 2px rgba(28, 28, 30, 0.12);
   font-variant-numeric: tabular-nums;
   z-index: 2;
 }
 
-/* Subtle Halo */
-.mn-marker .halo {
-  position: absolute;
-  width: var(--halo-size, 64px);
-  height: var(--halo-size, 64px);
-  border-radius: 9999px;
-  background: var(--pin-bg, var(--color-cobalt));
-  opacity: 0.12;
-  pointer-events: none;
-  transition: opacity 200ms ease;
-}
-.mn-marker.is-hottest .halo {
-  animation: mn-subtle-pulse 3s ease-in-out infinite;
-}
-
-@keyframes mn-subtle-pulse {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.08;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.16;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0.08;
-  }
-}
-
+/* Private lock */
 .mn-marker .lock {
   position: absolute;
-  left: -2px;
-  bottom: -2px;
-  width: 20px;
-  height: 20px;
+  left: -3px;
+  bottom: -3px;
+  width: 18px;
+  height: 18px;
   border-radius: 9999px;
   background: var(--color-violet);
-  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--color-surface);
   display: grid;
   place-items: center;
   z-index: 2;
 }
+
+/* Confirmed going — lime only */
+.mn-marker .going {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-lime);
+  box-shadow: 0 0 0 2px var(--color-surface);
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+
+/* Single soft halo — density, not sonar */
+.mn-marker .halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--halo, 72px);
+  height: var(--halo, 72px);
+  border-radius: 9999px;
+  background: var(--pin);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+.mn-marker.has-radar .halo {
+  opacity: 0.11;
+}
+.mn-marker.has-radar.is-hottest .halo {
+  animation: mn-halo-breathe 4.8s ease-in-out infinite;
+}
+@keyframes mn-halo-breathe {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0.09;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+    opacity: 0.15;
+  }
+}
+
+/* Floating label: shown when selected (all) or hovered (pointer devices) */
+.mn-marker .label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 9px);
+  transform: translate(-50%, 4px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 11px;
+  border-radius: 9999px;
+  background: var(--color-graphite);
+  color: var(--color-surface);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 1px 2px rgba(28, 28, 30, 0.2), 0 6px 16px rgba(28, 28, 30, 0.18);
+  transition: opacity 140ms ease, transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mn-marker .label b {
+  font-weight: 700;
+}
+.mn-marker .label span {
+  color: rgba(250, 248, 244, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+.mn-marker .label::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-graphite);
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 1px;
+}
+.mn-marker.is-going .label span {
+  color: var(--color-lime);
+}
+
+@media (hover: hover) {
+  .mn-marker:hover {
+    z-index: 6 !important;
+  }
+  .mn-marker:hover .pin {
+    transform: scale(1.05);
+  }
+  .mn-marker:hover .label {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Selected: raised layer, crisp lime outline, visible label — no big size jump */
+.mn-marker.is-active .pin {
+  transform: scale(1.04);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 0 0 2.5px var(--color-surface),
+    0 0 0 5px var(--color-lime),
+    0 8px 20px rgba(28, 28, 30, 0.22);
+}
+.mn-marker.is-active .label {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.mn-marker.is-active .halo {
+  opacity: 0.16;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mn-marker.has-radar.is-hottest .halo,
+  .animate-sheet,
+  .animate-fade {
+    animation: none;
+  }
+  .mn-marker .pin,
+  .mn-marker .badge,
+  .mn-marker .lock,
+  .mn-marker .going,
+  .mn-marker .label,
+  .mn-marker .halo,
+  .mn-chip,
+  .mn-action,
+  .mn-card,
+  .mn-switch,
+  .mn-switch-knob {
+    transition: none;
+  }
+}
+
 
 @keyframes mn-sheet-in {
   from {

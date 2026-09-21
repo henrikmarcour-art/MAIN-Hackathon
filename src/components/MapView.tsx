@@ -7,78 +7,111 @@ import {
   MAASTRICHT_CENTER_MOBILE,
   type Venue,
 } from "@/data/events";
-
-const STYLE_URL_LIGHT = "https://tiles.openfreemap.org/styles/positron";
-const STYLE_URL_NIGHT = "https://tiles.openfreemap.org/styles/dark";
+import { MAP_STYLES, type MapTheme } from "@/components/map/types";
 
 type Props = {
   venues: Venue[];
   selectedId: string | null;
   goingIds: Set<string>;
   onSelect: (id: string) => void;
+  /** Tap on the empty map (not a marker) */
   onMapClick: () => void;
+  /** Fly to this id when it changes (used after accepting an invite) */
   focusId: string | null;
-  theme: "light" | "night";
+  theme: MapTheme;
   showRadar: boolean;
+  /** Increment to request a recenter */
+  recenterNonce: number;
 };
 
-function markerBg(v: Venue) {
-  if (v.isPrivate) return "var(--color-violet)";
-  return "var(--color-cobalt)";
+const MIN_SIZE = 34;
+const MAX_SIZE = 60;
+const REF_MIN = Math.sqrt(10);
+const REF_MAX = Math.sqrt(220);
+
+/** Square-root attendance scaling, clamped so large events never dominate. */
+function markerSize(count: number) {
+  const t = (Math.sqrt(Math.max(count, 1)) - REF_MIN) / (REF_MAX - REF_MIN);
+  const clamped = Math.min(1, Math.max(0, t));
+  return Math.round(MIN_SIZE + clamped * (MAX_SIZE - MIN_SIZE));
 }
 
-function markerText() {
-  return "#ffffff";
+function haloSize(size: number) {
+  const t = (size - MIN_SIZE) / (MAX_SIZE - MIN_SIZE);
+  return Math.round(size + 18 + t * 44);
 }
 
-function buildMarkerEl(
-  v: Venue, 
-  count: number, 
-  active: boolean, 
-  isHottest: boolean, 
-  showRadar: boolean
-) {
-  const el = document.createElement("button");
-  el.type = "button";
-  
-  const scale = Math.min(1, Math.sqrt(count) / Math.sqrt(210));
-  const size = 34 + scale * (62 - 34);
-  const haloSize = size + 12 + scale * 24;
+const LOCK_SVG =
+  '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const CHECK_SVG =
+  '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>';
 
-  let className = "mn-marker";
-  if (active) className += " is-active";
-  if (isHottest) className += " is-hottest";
-  
-  el.className = className;
-  el.setAttribute("aria-label", `${v.name}, ${count} going`);
-  
-  el.style.setProperty("--marker-size", `${size}px`);
-  el.style.setProperty("--halo-size", `${haloSize}px`);
-  el.style.setProperty("--pin-bg", markerBg(v));
-  el.style.setProperty("--pin-badge-text", markerText());
-
-  el.innerHTML = renderMarkerInner(v, count, showRadar);
-  return el;
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-function renderMarkerInner(v: Venue, count: number, showRadar: boolean) {
-  const halo = showRadar ? `<span class="halo"></span>` : "";
+function renderMarkerInner(v: Venue, count: number, going: boolean) {
   const friends = v.friendsGoing.slice(0, 2);
-  const inner =
+  const body =
     friends.length > 0
       ? `<span class="avatars">${friends
           .map(
             (p) =>
-              `<span style="background:${p.color}">${p.initials}</span>`
+              `<span style="background:${p.color}">${escapeHtml(p.initials)}</span>`
           )
           .join("")}</span>`
       : `<span class="count">${count}</span>`;
-  const badge =
-    friends.length > 0 ? `<span class="badge">${count}</span>` : "";
-  const lock = v.isPrivate
-    ? `<span class="lock"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>`
-    : "";
-  return `${halo}<span class="pin">${inner}</span>${badge}${lock}`;
+  const badge = friends.length > 0 ? `<span class="badge">${count}</span>` : "";
+  const lock = v.isPrivate ? `<span class="lock">${LOCK_SVG}</span>` : "";
+  const goingDot = going ? `<span class="going">${CHECK_SVG}</span>` : "";
+  const label = `<span class="label"><b>${escapeHtml(v.name)}</b><span>${count} going</span></span>`;
+  return `<span class="halo"></span><span class="pin">${body}</span>${badge}${lock}${goingDot}${label}`;
+}
+
+function applyMarkerState(
+  el: HTMLElement,
+  v: Venue,
+  opts: {
+    count: number;
+    active: boolean;
+    going: boolean;
+    hottest: boolean;
+    showRadar: boolean;
+  }
+) {
+  const { count, active, going, hottest, showRadar } = opts;
+  const size = markerSize(count);
+
+  el.className = [
+    "mn-marker",
+    v.isPrivate ? "is-private" : "",
+    active ? "is-active" : "",
+    going ? "is-going" : "",
+    hottest ? "is-hottest" : "",
+    showRadar ? "has-radar" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  el.setAttribute("aria-label", `${v.name}, ${count} going`);
+  el.setAttribute("aria-pressed", active ? "true" : "false");
+  el.style.setProperty("--size", `${size}px`);
+  el.style.setProperty("--halo", `${haloSize(size)}px`);
+  el.style.zIndex = active ? "10" : hottest ? "3" : "1";
+
+  // Only rebuild inner DOM when its content actually changes so CSS transitions survive.
+  const sig = `${count}|${going ? 1 : 0}`;
+  if (el.dataset.sig !== sig) {
+    el.dataset.sig = sig;
+    el.innerHTML = renderMarkerInner(v, count, going);
+  }
+}
+
+function isMobileViewport() {
+  return window.innerWidth < 768;
+}
+
+function inMaastricht(lng: number, lat: number) {
+  return lng > 5.6 && lng < 5.78 && lat > 50.79 && lat < 50.9;
 }
 
 export default function MapView({
@@ -90,10 +123,12 @@ export default function MapView({
   focusId,
   theme,
   showRadar,
+  recenterNonce,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const themeRef = useRef<MapTheme>(theme);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const onMapClickRef = useRef(onMapClick);
@@ -102,10 +137,11 @@ export default function MapView({
   // Init map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const isMobile = window.innerWidth < 768;
+    const isMobile = isMobileViewport();
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: theme === "light" ? STYLE_URL_LIGHT : STYLE_URL_NIGHT,
+      style: MAP_STYLES[themeRef.current],
+      // On mobile, sit slightly north so pins fall between the header and the rail.
       center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
       zoom: isMobile ? 13.6 : 14.6,
       minZoom: 12,
@@ -124,14 +160,14 @@ export default function MapView({
       map.remove();
       mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update map style when theme changes
+  // Swap basemap style; DOM markers and camera survive the swap.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    map.setStyle(theme === "light" ? STYLE_URL_LIGHT : STYLE_URL_NIGHT);
+    if (!map || themeRef.current === theme) return;
+    themeRef.current = theme;
+    map.setStyle(MAP_STYLES[theme]);
   }, [theme]);
 
   // Sync markers with visible venues + state
@@ -141,7 +177,6 @@ export default function MapView({
     const markers = markersRef.current;
     const wanted = new Set(venues.map((v) => v.id));
 
-    // Remove stale
     for (const [id, m] of markers) {
       if (!wanted.has(id)) {
         m.remove();
@@ -149,46 +184,33 @@ export default function MapView({
       }
     }
 
-    // Find the hottest event
-    let maxCount = 0;
+    let hottestId: string | null = null;
+    let max = 0;
     for (const v of venues) {
-      const count = v.goingCount + (goingIds.has(v.id) ? 1 : 0);
-      if (count > maxCount) maxCount = count;
+      const c = v.goingCount + (goingIds.has(v.id) ? 1 : 0);
+      if (c > max) {
+        max = c;
+        hottestId = v.id;
+      }
     }
 
-    // Add / update
     for (const v of venues) {
       const count = v.goingCount + (goingIds.has(v.id) ? 1 : 0);
-      const active = v.id === selectedId;
-      const isHottest = count === maxCount && count > 10;
-
+      const state = {
+        count,
+        active: v.id === selectedId,
+        going: goingIds.has(v.id),
+        hottest: v.id === hottestId,
+        showRadar,
+      };
       const existing = markers.get(v.id);
       if (existing) {
-        const el = existing.getElement();
-        
-        let className = "mn-marker";
-        if (active) className += " is-active";
-        if (isHottest) className += " is-hottest";
-        el.className = className;
-        
-        el.setAttribute("aria-label", `${v.name}, ${count} going`);
-        
-        const scale = Math.min(1, Math.sqrt(count) / Math.sqrt(210));
-        const size = 34 + scale * (62 - 34);
-        const haloSize = size + 12 + scale * 24;
-        
-        el.style.setProperty("--marker-size", `${size}px`);
-        el.style.setProperty("--halo-size", `${haloSize}px`);
-        el.style.setProperty("--pin-bg", markerBg(v));
-        el.style.setProperty("--pin-badge-text", markerText(v));
-
-        el.innerHTML = renderMarkerInner(v, count, showRadar);
-        el.style.zIndex = active ? "10" : "1";
+        applyMarkerState(existing.getElement(), v, state);
         continue;
       }
-
-      const el = buildMarkerEl(v, count, active, isHottest, showRadar);
-      el.style.zIndex = active ? "10" : "1";
+      const el = document.createElement("button");
+      el.type = "button";
+      applyMarkerState(el, v, state);
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelectRef.current(v.id);
@@ -206,19 +228,70 @@ export default function MapView({
     if (!map || !focusId) return;
     const v = venues.find((x) => x.id === focusId);
     if (!v) return;
-    const isMobile = window.innerWidth < 768;
+    const isMobile = isMobileViewport();
     map.easeTo({
       center: [v.lng, v.lat],
       zoom: Math.max(map.getZoom(), 15),
-      offset: isMobile ? [0, -190] : [-180, 0],
+      offset: isMobile ? [0, -170] : [-180, 0],
       duration: 650,
     });
   }, [focusId, venues]);
 
+  // Recenter: use geolocation only when already granted, otherwise fall back silently.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || recenterNonce === 0) return;
+    const isMobile = isMobileViewport();
+    const fallback = () =>
+      map.easeTo({
+        center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
+        zoom: isMobile ? 13.6 : 14.6,
+        duration: 700,
+      });
+
+    let cancelled = false;
+    const locate = () => {
+      if (!("geolocation" in navigator)) return fallback();
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (cancelled) return;
+          const { longitude, latitude } = pos.coords;
+          if (inMaastricht(longitude, latitude)) {
+            map.easeTo({ center: [longitude, latitude], zoom: 15, duration: 700 });
+          } else {
+            fallback();
+          }
+        },
+        () => {
+          if (!cancelled) fallback();
+        },
+        { timeout: 2500, maximumAge: 60_000 }
+      );
+    };
+
+    if (typeof navigator !== "undefined" && navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: "geolocation" })
+        .then((status) => {
+          if (cancelled) return;
+          if (status.state === "granted") locate();
+          else fallback();
+        })
+        .catch(() => {
+          if (!cancelled) fallback();
+        });
+    } else {
+      fallback();
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [recenterNonce]);
+
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0"
+      className={`absolute inset-0 mn-map theme-${theme}`}
       style={{ position: "absolute", inset: 0 }}
     />
   );
