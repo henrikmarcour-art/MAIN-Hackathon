@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/next-dev.mjs",
+    "dev:fast": "next dev",
     "dev:clean": "node scripts/clean-and-dev.mjs",
     "build": "npm run map:style && next build",
     "start": "next start",

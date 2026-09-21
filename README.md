@@ -11,19 +11,27 @@ npm install
 npm run dev
 ```
 
+(`npm run dev` clears a broken `.next` automatically after a production build. Use `npm run dev:fast` only if you did **not** run `npm run build` since the last dev session.)
+
 Open [http://localhost:3000](http://localhost:3000). The layout is designed for a phone (390 × 844) and also works at desktop width.
 
 ### “Internal Server Error” on localhost:3000
 
 `next dev` and `next build` both write to `.next`. **Do not run `npm run build` while the dev server is still running** — it corrupts the cache and every page returns 500 until you reset.
 
-Fix (stop the dev terminal first, then):
+Fix (stop the dev terminal with **Ctrl+C**, then):
+
+```bash
+npm run dev
+```
+
+or force a wipe:
 
 ```bash
 npm run dev:clean
 ```
 
-That deletes `.next` and starts dev again. Alternatively: `rm -rf .next` then `npm run dev`.
+Never run `npm run build` while `npm run dev` is still running.
 
 ## What you can do
 
