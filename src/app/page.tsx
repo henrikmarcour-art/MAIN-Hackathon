@@ -23,10 +23,7 @@ import {
   type Filter,
   type MapTheme,
 } from "@/components/map/types";
-import {
-  displayAttendeeCount,
-  uniqueFriendsAcrossVenues,
-} from "@/lib/venue-attendance";
+import { uniqueFriendsAcrossVenues } from "@/lib/venue-attendance";
 
 // MapLibre touches `window`; load it client-side only.
 const MapView = dynamic(() => import("@/components/MapView"), {

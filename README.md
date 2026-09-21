@@ -13,6 +13,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The layout is designed for a phone (390 × 844) and also works at desktop width.
 
+### “Internal Server Error” on localhost:3000
+
+`next dev` and `next build` both write to `.next`. **Do not run `npm run build` while the dev server is still running** — it corrupts the cache and every page returns 500 until you reset.
+
+Fix (stop the dev terminal first, then):
+
+```bash
+npm run dev:clean
+```
+
+That deletes `.next` and starts dev again. Alternatively: `rm -rf .next` then `npm run dev`.
+
 ## What you can do
 
 1. The map opens on Maastricht (OpenFreeMap, light or night).
