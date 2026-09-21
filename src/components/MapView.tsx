@@ -29,8 +29,14 @@ type Props = {
 
 const MIN_SIZE = 34;
 const MAX_SIZE = 60;
-/** Fixed slot MapLibre anchors — inner pin scales, root size never changes. */
-const MARKER_SLOT = MAX_SIZE;
+type VenueMarker = { marker: maplibregl.Marker; hit: HTMLButtonElement };
+
+function createMarkerAnchor(hit: HTMLButtonElement) {
+  const anchor = document.createElement("div");
+  anchor.className = "mn-marker-anchor";
+  anchor.appendChild(hit);
+  return anchor;
+}
 
 const REF_MIN = Math.sqrt(10);
 const REF_MAX = Math.sqrt(220);
@@ -98,8 +104,6 @@ function applyMarkerState(
 
   el.setAttribute("aria-label", `${v.name}, ${count} going`);
   el.setAttribute("aria-pressed", active ? "true" : "false");
-  el.style.width = `${MARKER_SLOT}px`;
-  el.style.height = `${MARKER_SLOT}px`;
   el.style.setProperty("--size", `${size}px`);
   el.style.setProperty("--halo", `${haloSize(size)}px`);
   el.style.zIndex = active ? "10" : hottest ? "3" : "1";
@@ -136,7 +140,7 @@ export default function MapView({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const markersRef = useRef<Map<string, VenueMarker>>(new Map());
   const themeRef = useRef<MapTheme>(theme);
   const pickMarkerRef = useRef<maplibregl.Marker | null>(null);
   const onSelectRef = useRef(onSelect);
@@ -182,9 +186,15 @@ export default function MapView({
       onMapClickRef.current();
     });
     mapRef.current = map;
+    if (process.env.NODE_ENV === "development") {
+      (window as unknown as { __mnMap?: maplibregl.Map }).__mnMap = map;
+    }
     const markers = markersRef.current;
     return () => {
-      markers.forEach((m) => m.remove());
+      if (process.env.NODE_ENV === "development") {
+        delete (window as unknown as { __mnMap?: maplibregl.Map }).__mnMap;
+      }
+      markers.forEach((entry) => entry.marker.remove());
       markers.clear();
       map.remove();
       mapRef.current = null;
@@ -206,9 +216,9 @@ export default function MapView({
     const markers = markersRef.current;
     const wanted = new Set(venues.map((v) => v.id));
 
-    for (const [id, m] of markers) {
+    for (const [id, entry] of markers) {
       if (!wanted.has(id)) {
-        m.remove();
+        entry.marker.remove();
         markers.delete(id);
       }
     }
@@ -234,13 +244,17 @@ export default function MapView({
       };
       const existing = markers.get(v.id);
       if (existing) {
-        applyMarkerState(existing.getElement(), v, state);
+        applyMarkerState(existing.hit, v, state);
+        existing.marker.setLngLat([v.lng, v.lat]);
+        const anchorEl = existing.marker.getElement();
+        anchorEl.dataset.lng = String(v.lng);
+        anchorEl.dataset.lat = String(v.lat);
         continue;
       }
-      const el = document.createElement("button");
-      el.type = "button";
-      applyMarkerState(el, v, state);
-      el.addEventListener("click", (e) => {
+      const hit = document.createElement("button");
+      hit.type = "button";
+      applyMarkerState(hit, v, state);
+      hit.addEventListener("click", (e) => {
         e.stopPropagation();
         if (pickModeRef.current) {
           onPickRef.current?.({ lng: v.lng, lat: v.lat });
@@ -248,16 +262,19 @@ export default function MapView({
         }
         onSelectRef.current(v.id);
       });
-      // subpixelPositioning stops MapLibre rounding the marker offset to whole
-      // pixels, which otherwise makes pins visibly drift while zooming.
+      const anchor = createMarkerAnchor(hit);
+      anchor.dataset.lng = String(v.lng);
+      anchor.dataset.lat = String(v.lat);
+      // Zero-size anchor: MapLibre's translate(-50%,-50%) stays at the lng/lat
+      // point; the visible pin is centered in .mn-marker inside the anchor.
       const marker = new maplibregl.Marker({
-        element: el,
+        element: anchor,
         anchor: "center",
         subpixelPositioning: true,
       })
         .setLngLat([v.lng, v.lat])
         .addTo(map);
-      markers.set(v.id, marker);
+      markers.set(v.id, { marker, hit });
     }
   }, [venues, selectedId, goingIds, showRadar]);
 

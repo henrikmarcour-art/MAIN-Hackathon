@@ -245,21 +245,34 @@ body {
 
 /* ------------------------------------------------------------------ */
 /* Social markers                                                      */
-/* NOTE: never transition/transform the root — MapLibre positions it.  */
+/* MapLibre transforms .mn-marker-anchor (0×0). Never size/style that   */
+/* element — only the inner .mn-marker holds visible UI.               */
 /* ------------------------------------------------------------------ */
+.mn-marker-anchor.maplibregl-marker {
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  transition: none !important;
+  will-change: transform;
+}
 .mn-marker {
   --pin: var(--color-cobalt);
   --pin-ink: #fff;
   --marker-slot: 60px;
+  position: absolute;
+  left: 0;
+  top: 0;
   width: var(--marker-slot);
   height: var(--marker-slot);
+  transform: translate(-50%, -50%);
   cursor: pointer;
   background: transparent;
   border: 0;
   padding: 0;
   display: block;
-  position: relative;
   box-sizing: border-box;
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
 }
 .mn-marker .stack {
