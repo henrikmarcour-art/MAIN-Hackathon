@@ -22,10 +22,10 @@ export default function Error({
         Something broke
       </h1>
       <p className="mt-2 max-w-[340px] text-[14px] leading-relaxed text-graphite-soft">
-        If you just ran <code className="text-graphite">npm run build</code> while
-        the dev server was open, stop dev, delete{" "}
-        <code className="text-graphite">.next</code>, then run{" "}
-        <code className="text-graphite">npm run dev:clean</code>.
+        After a merge, stop the old dev server (Ctrl+C) and run{" "}
+        <code className="text-graphite">npm run dev</code> again — it clears a
+        stale <code className="text-graphite">.next</code> folder (fixes missing
+        chunk errors like <code className="text-graphite">586.js</code>).
       </p>
       <button
         type="button"
