@@ -7,7 +7,11 @@ import {
   MAASTRICHT_CENTER_MOBILE,
   type Venue,
 } from "@/data/events";
-import { MAP_STYLES, type MapTheme } from "@/components/map/types";
+import { MAP_STYLES, type MapTheme, type Filter } from "@/components/map/types";
+import {
+  attendeeCountNoun,
+  displayAttendeeCount,
+} from "@/lib/venue-attendance";
 
 type Props = {
   venues: Venue[];
@@ -19,6 +23,7 @@ type Props = {
   /** Fly to this id when it changes (used after accepting an invite) */
   focusId: string | null;
   theme: MapTheme;
+  filter: Filter;
   showRadar: boolean;
   /** Increment to request a recenter */
   recenterNonce: number;
@@ -62,7 +67,12 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-function renderMarkerInner(v: Venue, count: number, going: boolean) {
+function renderMarkerInner(
+  v: Venue,
+  count: number,
+  going: boolean,
+  countNoun: "going" | "friends"
+) {
   const friends = v.friendsGoing.slice(0, 2);
   const body =
     friends.length > 0
@@ -76,7 +86,7 @@ function renderMarkerInner(v: Venue, count: number, going: boolean) {
   const badge = friends.length > 0 ? `<span class="badge">${count}</span>` : "";
   const lock = v.isPrivate ? `<span class="lock">${LOCK_SVG}</span>` : "";
   const goingDot = going ? `<span class="going">${CHECK_SVG}</span>` : "";
-  const label = `<span class="label"><b>${escapeHtml(v.name)}</b><span>${count} going</span></span>`;
+  const label = `<span class="label"><b>${escapeHtml(v.name)}</b><span>${count} ${countNoun}</span></span>`;
   return `<span class="halo"></span><span class="stack"><span class="pin">${body}</span>${badge}${lock}${goingDot}</span>${label}`;
 }
 
@@ -85,13 +95,14 @@ function applyMarkerState(
   v: Venue,
   opts: {
     count: number;
+    countNoun: "going" | "friends";
     active: boolean;
     going: boolean;
     hottest: boolean;
     showRadar: boolean;
   }
 ) {
-  const { count, active, going, hottest, showRadar } = opts;
+  const { count, countNoun, active, going, hottest, showRadar } = opts;
   const size = markerSize(count);
 
   // Never assign el.className — MapLibre adds maplibregl-marker + anchor classes.
@@ -102,17 +113,17 @@ function applyMarkerState(
   el.classList.toggle("is-hottest", hottest);
   el.classList.toggle("has-radar", showRadar);
 
-  el.setAttribute("aria-label", `${v.name}, ${count} going`);
+  el.setAttribute("aria-label", `${v.name}, ${count} ${countNoun}`);
   el.setAttribute("aria-pressed", active ? "true" : "false");
   el.style.setProperty("--size", `${size}px`);
   el.style.setProperty("--halo", `${haloSize(size)}px`);
   el.style.zIndex = active ? "10" : hottest ? "3" : "1";
 
   // Only rebuild inner DOM when its content actually changes so CSS transitions survive.
-  const sig = `${count}|${going ? 1 : 0}`;
+  const sig = `${count}|${countNoun}|${going ? 1 : 0}`;
   if (el.dataset.sig !== sig) {
     el.dataset.sig = sig;
-    el.innerHTML = renderMarkerInner(v, count, going);
+    el.innerHTML = renderMarkerInner(v, count, going, countNoun);
   }
 }
 
@@ -132,6 +143,7 @@ export default function MapView({
   onMapClick,
   focusId,
   theme,
+  filter,
   showRadar,
   recenterNonce,
   pickMode = false,
@@ -225,8 +237,9 @@ export default function MapView({
 
     let hottestId: string | null = null;
     let max = 0;
+    const countNoun = attendeeCountNoun(filter);
     for (const v of venues) {
-      const c = v.goingCount + (goingIds.has(v.id) ? 1 : 0);
+      const c = displayAttendeeCount(v, goingIds, filter);
       if (c > max) {
         max = c;
         hottestId = v.id;
@@ -234,9 +247,10 @@ export default function MapView({
     }
 
     for (const v of venues) {
-      const count = v.goingCount + (goingIds.has(v.id) ? 1 : 0);
+      const count = displayAttendeeCount(v, goingIds, filter);
       const state = {
         count,
+        countNoun,
         active: v.id === selectedId,
         going: goingIds.has(v.id),
         hottest: v.id === hottestId,
@@ -276,7 +290,7 @@ export default function MapView({
         .addTo(map);
       markers.set(v.id, { marker, hit });
     }
-  }, [venues, selectedId, goingIds, showRadar]);
+  }, [venues, selectedId, goingIds, showRadar, filter]);
 
   useEffect(() => {
     const map = mapRef.current;

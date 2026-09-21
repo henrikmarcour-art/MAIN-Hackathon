@@ -3,12 +3,18 @@
 import { useState } from "react";
 import { categoryMeta, type Venue } from "@/data/events";
 import { AvatarStack } from "@/components/Avatar";
+import {
+  attendeeCountNoun,
+  displayAttendeeCount,
+} from "@/lib/venue-attendance";
+import type { Filter } from "./types";
 import { ChevronIcon } from "./icons";
 
 type Props = {
   venues: Venue[];
   goingIds: Set<string>;
-  totalGoing: number;
+  filter: Filter;
+  headlineCount: number;
   onPick: (id: string) => void;
 };
 
@@ -21,13 +27,18 @@ function categoryLabel(v: Venue) {
 export default function DiscoveryRail({
   venues,
   goingIds,
-  totalGoing,
+  filter,
+  headlineCount,
   onPick,
 }: Props) {
   const [expanded, setExpanded] = useState(true);
+  const countNoun = attendeeCountNoun(filter);
 
   const popular = [...venues]
-    .map((v) => ({ v, count: v.goingCount + (goingIds.has(v.id) ? 1 : 0) }))
+    .map((v) => ({
+      v,
+      count: displayAttendeeCount(v, goingIds, filter),
+    }))
     .sort((a, b) => b.count - a.count);
 
   return (
@@ -50,9 +61,11 @@ export default function DiscoveryRail({
               </span>
               <span className="block text-[12px] text-graphite-muted">
                 <span className="font-semibold tabular-nums text-graphite-soft">
-                  {totalGoing.toLocaleString("en-US")}
+                  {headlineCount.toLocaleString("en-US")}
                 </span>{" "}
-                people going out
+                {filter === "friends"
+                  ? "friends out tonight"
+                  : "people going out"}
               </span>
             </span>
             <span
@@ -115,7 +128,7 @@ export default function DiscoveryRail({
                   <span className="text-[13px] font-bold tabular-nums tracking-tight text-graphite">
                     {count}
                     <span className="ml-1 font-medium text-graphite-muted">
-                      going
+                      {countNoun}
                     </span>
                   </span>
                 </span>

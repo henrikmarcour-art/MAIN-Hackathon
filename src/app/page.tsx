@@ -23,6 +23,10 @@ import {
   type Filter,
   type MapTheme,
 } from "@/components/map/types";
+import {
+  displayAttendeeCount,
+  uniqueFriendsAcrossVenues,
+} from "@/lib/venue-attendance";
 
 // MapLibre touches `window`; load it client-side only.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -94,6 +98,14 @@ export default function Home() {
         0
       ),
     [visibleVenues, goingIds]
+  );
+
+  const railHeadlineCount = useMemo(
+    () =>
+      filter === "friends"
+        ? uniqueFriendsAcrossVenues(filteredVenues)
+        : totalGoing,
+    [filter, filteredVenues, totalGoing]
   );
 
   const pendingInvites = invitations.filter(
@@ -213,6 +225,7 @@ export default function Home() {
         }}
         focusId={focusId}
         theme={theme}
+        filter={filter}
         showRadar={showRadar}
         recenterNonce={recenterNonce}
         pickMode={mapPickActive}
@@ -267,7 +280,8 @@ export default function Home() {
         <DiscoveryRail
           venues={filteredVenues}
           goingIds={goingIds}
-          totalGoing={totalGoing}
+          filter={filter}
+          headlineCount={railHeadlineCount}
           onPick={handleSelect}
         />
       )}
@@ -275,6 +289,7 @@ export default function Home() {
       {onMap && selected && (
         <EventSheet
           venue={selected}
+          filter={filter}
           going={goingIds.has(selected.id)}
           onToggleGoing={() => toggleGoing(selected.id)}
           onClose={() => setSelectedId(null)}
