@@ -14,7 +14,7 @@ type Props = {
 };
 
 const modes: { key: MapTheme; label: string; hint: string }[] = [
-  { key: "light", label: "Light", hint: "Clean daytime basemap" },
+  { key: "light", label: "Light", hint: "Natural colours, full detail" },
   { key: "night", label: "Night", hint: "Low-glare for late hours" },
 ];
 
