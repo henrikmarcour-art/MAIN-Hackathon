@@ -289,7 +289,6 @@ export default function Home() {
       {onMap && selected && (
         <EventSheet
           venue={selected}
-          filter={filter}
           going={goingIds.has(selected.id)}
           onToggleGoing={() => toggleGoing(selected.id)}
           onClose={() => setSelectedId(null)}
