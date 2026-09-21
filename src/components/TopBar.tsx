@@ -36,6 +36,7 @@ export default function TopBar({
         <SearchCapsule
           venues={venues}
           goingIds={goingIds}
+          filter={filter}
           onPick={onPick}
           className="px-3"
         />
@@ -50,6 +51,7 @@ export default function TopBar({
         <SearchCapsule
           venues={venues}
           goingIds={goingIds}
+          filter={filter}
           onPick={onPick}
           className="w-[420px]"
         />

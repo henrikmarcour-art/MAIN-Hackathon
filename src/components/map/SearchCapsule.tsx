@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { categoryMeta, currentUser, type Venue } from "@/data/events";
 import { Avatar } from "@/components/Avatar";
+import { displayAttendeeCount } from "@/lib/venue-attendance";
+import type { Filter } from "./types";
 import { CloseIcon, SearchIcon } from "./icons";
 
 type Props = {
   venues: Venue[];
   goingIds: Set<string>;
+  filter: Filter;
   onPick: (id: string) => void;
   className?: string;
 };
@@ -21,6 +24,7 @@ function categoryLabel(v: Venue) {
 export default function SearchCapsule({
   venues,
   goingIds,
+  filter,
   onPick,
   className = "",
 }: Props) {
@@ -45,7 +49,10 @@ export default function SearchCapsule({
   const results = useMemo(() => {
     const term = q.trim().toLowerCase();
     const list = venues
-      .map((v) => ({ v, count: v.goingCount + (goingIds.has(v.id) ? 1 : 0) }))
+      .map((v) => ({
+        v,
+        count: displayAttendeeCount(v, goingIds, filter),
+      }))
       .filter(({ v }) =>
         term.length === 0
           ? true
@@ -55,7 +62,7 @@ export default function SearchCapsule({
       )
       .sort((a, b) => b.count - a.count);
     return list.slice(0, 6);
-  }, [venues, goingIds, q]);
+  }, [venues, goingIds, filter, q]);
 
   return (
     <div className={`pointer-events-auto relative ${className}`}>

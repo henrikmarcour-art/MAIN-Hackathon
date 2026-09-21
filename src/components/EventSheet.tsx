@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { categoryMeta, currentUser, people, type Venue } from "@/data/events";
+import {
+  attendeeCountNoun,
+  displayAttendeeCount,
+} from "@/lib/venue-attendance";
+import type { Filter } from "@/components/map/types";
 import { AvatarStack } from "./Avatar";
 
 type Props = {
   venue: Venue;
+  filter: Filter;
   going: boolean;
   onToggleGoing: () => void;
   onClose: () => void;
@@ -19,6 +25,7 @@ function priceLabel(p: 1 | 2 | 3) {
 
 export default function EventSheet({
   venue,
+  filter,
   going,
   onToggleGoing,
   onClose,
@@ -29,7 +36,12 @@ export default function EventSheet({
   // Never carry a pending confirmation over to another event.
   useEffect(() => setConfirmDelete(false), [venue.id]);
 
-  const count = venue.goingCount + (going ? 1 : 0);
+  const count = displayAttendeeCount(
+    venue,
+    going ? new Set([venue.id]) : new Set<string>(),
+    filter
+  );
+  const countNoun = attendeeCountNoun(filter);
   const host =
     venue.hostId === currentUser.id
       ? currentUser
@@ -160,7 +172,7 @@ export default function EventSheet({
                 <div className="text-[15px] font-bold tabular-nums tracking-tight text-graphite">
                   {count}{" "}
                   <span className="font-medium text-graphite-muted">
-                    going
+                    {countNoun}
                   </span>
                 </div>
                 <div className="text-[12px] text-graphite-muted">
