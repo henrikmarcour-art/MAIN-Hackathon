@@ -48,8 +48,30 @@ Graphite text · warm off-white surfaces · lime accent · orange = busy nightli
 
 ## Team workflow
 
-- `main` stays runnable. One branch per feature (`feat/map`, `feat/auth`, ...).
-- Small PRs, merge often. Pull `main` before starting anything.
+`main` always stays runnable. Everyone works on their own branch and opens a PR back into `main`; merge small and often (every 30–45 min) to avoid conflicts.
+
+| Branch         | Owner  | Files                                                                              |
+| -------------- | ------ | ----------------------------------------------------------------------------------- |
+| `feat/map`     | Henrik | `src/components/MapView.tsx`, marker styles in `src/app/globals.css`                |
+| `feat/events`  | Leo    | `src/components/EventSheet.tsx`, `InviteCard.tsx`, `ForYouPanel.tsx`, `CreatePanel.tsx`, `src/data/events.ts` |
+| `feat/profile` | Thies  | `src/components/ProfilePanel.tsx`, `src/components/Avatar.tsx`                      |
+
+Shared / handle-with-care (touching these can cause merge conflicts — keep changes small and pull often):
+
+- `src/app/page.tsx` — wires everything together (state, props). If you need a new prop on your component, add it here too, then push fast.
+- `src/data/events.ts` — sample data + types. Leo owns the content, but everyone reads from it.
+- `src/components/BottomNav.tsx`, `TopBar.tsx` — shared chrome.
+
+Day-to-day loop:
+
+```bash
+git checkout feat/map          # or feat/events / feat/profile
+git pull origin main --rebase  # get the latest before you start
+# ...edit your files...
+git add -A && git commit -m "..."
+git push -u origin feat/map
+# open a PR into main, teammate skims, merge
+```
 
 ## Next (Phase 2)
 
