@@ -164,8 +164,12 @@ export default function Home() {
         onPick={setMapPick}
       />
 
-      {!mapPickActive && (
+      {tab !== "profile" && !mapPickActive && (
         <TopBar filter={filter} onFilter={handleFilter} totalGoing={totalGoing} />
+      )}
+
+      {tab === "profile" && (
+        <div className="animate-fade pointer-events-none absolute inset-0 z-10 bg-graphite/20 backdrop-blur-[2px]" />
       )}
 
       {pendingInvites.length > 0 && tab === "map" && !mapPickActive && (
