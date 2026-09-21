@@ -2,16 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { categoryMeta, currentUser, people, type Venue } from "@/data/events";
-import {
-  attendeeCountNoun,
-  displayAttendeeCount,
-} from "@/lib/venue-attendance";
-import type { Filter } from "@/components/map/types";
 import { AvatarStack } from "./Avatar";
+import AttendeeListSheet from "./AttendeeListSheet";
+import { totalGoingCount } from "@/lib/venue-attendees";
 
 type Props = {
   venue: Venue;
-  filter: Filter;
   going: boolean;
   onToggleGoing: () => void;
   onClose: () => void;
@@ -25,23 +21,21 @@ function priceLabel(p: 1 | 2 | 3) {
 
 export default function EventSheet({
   venue,
-  filter,
   going,
   onToggleGoing,
   onClose,
   onDelete,
 }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showAttendees, setShowAttendees] = useState(false);
 
   // Never carry a pending confirmation over to another event.
-  useEffect(() => setConfirmDelete(false), [venue.id]);
+  useEffect(() => {
+    setConfirmDelete(false);
+    setShowAttendees(false);
+  }, [venue.id]);
 
-  const count = displayAttendeeCount(
-    venue,
-    going ? new Set([venue.id]) : new Set<string>(),
-    filter
-  );
-  const countNoun = attendeeCountNoun(filter);
+  const allGoing = totalGoingCount(venue, going);
   const host =
     venue.hostId === currentUser.id
       ? currentUser
@@ -74,6 +68,16 @@ export default function EventSheet({
         : `${friendNames.slice(0, 2).join(", ")}${
             friendNames.length > 2 ? ` +${friendNames.length - 2}` : ""
           } are going`;
+
+  if (showAttendees) {
+    return (
+      <AttendeeListSheet
+        venue={venue}
+        userGoing={going}
+        onClose={() => setShowAttendees(false)}
+      />
+    );
+  }
 
   return (
     <div
@@ -163,24 +167,43 @@ export default function EventSheet({
             {venue.description}
           </p>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShowAttendees(true)}
+            aria-label={`View all ${allGoing} people going`}
+            className="mt-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-transparent py-1 text-left transition-colors hover:border-line/80 hover:bg-surface-2/60 active:scale-[0.99]"
+          >
+            <span className="flex min-w-0 items-center gap-2.5">
               {venue.friendsGoing.length > 0 && (
                 <AvatarStack people={venue.friendsGoing} size={30} />
               )}
-              <div className="leading-tight">
-                <div className="text-[15px] font-bold tabular-nums tracking-tight text-graphite">
-                  {count}{" "}
-                  <span className="font-medium text-graphite-muted">
-                    {countNoun}
-                  </span>
-                </div>
-                <div className="text-[12px] text-graphite-muted">
+              <span className="leading-tight">
+                <span className="block text-[15px] font-bold tabular-nums tracking-tight text-graphite">
+                  {allGoing}{" "}
+                  <span className="font-medium text-graphite-muted">going</span>
+                </span>
+                <span className="block text-[12px] text-graphite-muted">
                   {friendLine}
-                </div>
-              </div>
-            </div>
-          </div>
+                </span>
+              </span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1 pr-1 text-[12px] font-semibold text-cobalt">
+              All
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </span>
+          </button>
 
           {isHost ? (
             confirmDelete && onDelete ? (
