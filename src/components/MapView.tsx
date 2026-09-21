@@ -29,6 +29,9 @@ type Props = {
 
 const MIN_SIZE = 34;
 const MAX_SIZE = 60;
+/** Fixed slot MapLibre anchors — inner pin scales, root size never changes. */
+const MARKER_SLOT = MAX_SIZE;
+
 const REF_MIN = Math.sqrt(10);
 const REF_MAX = Math.sqrt(220);
 
@@ -68,7 +71,7 @@ function renderMarkerInner(v: Venue, count: number, going: boolean) {
   const lock = v.isPrivate ? `<span class="lock">${LOCK_SVG}</span>` : "";
   const goingDot = going ? `<span class="going">${CHECK_SVG}</span>` : "";
   const label = `<span class="label"><b>${escapeHtml(v.name)}</b><span>${count} going</span></span>`;
-  return `<span class="halo"></span><span class="pin">${body}</span>${badge}${lock}${goingDot}${label}`;
+  return `<span class="halo"></span><span class="stack"><span class="pin">${body}</span>${badge}${lock}${goingDot}</span>${label}`;
 }
 
 function applyMarkerState(
@@ -85,18 +88,18 @@ function applyMarkerState(
   const { count, active, going, hottest, showRadar } = opts;
   const size = markerSize(count);
 
-  el.className = [
-    "mn-marker",
-    v.isPrivate ? "is-private" : "",
-    active ? "is-active" : "",
-    going ? "is-going" : "",
-    hottest ? "is-hottest" : "",
-    showRadar ? "has-radar" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  // Never assign el.className — MapLibre adds maplibregl-marker + anchor classes.
+  el.classList.add("mn-marker");
+  el.classList.toggle("is-private", !!v.isPrivate);
+  el.classList.toggle("is-active", active);
+  el.classList.toggle("is-going", going);
+  el.classList.toggle("is-hottest", hottest);
+  el.classList.toggle("has-radar", showRadar);
+
   el.setAttribute("aria-label", `${v.name}, ${count} going`);
   el.setAttribute("aria-pressed", active ? "true" : "false");
+  el.style.width = `${MARKER_SLOT}px`;
+  el.style.height = `${MARKER_SLOT}px`;
   el.style.setProperty("--size", `${size}px`);
   el.style.setProperty("--halo", `${haloSize(size)}px`);
   el.style.zIndex = active ? "10" : hottest ? "3" : "1";
