@@ -56,7 +56,7 @@ export default function EventSheet({
   const friendNames = venue.friendsGoing.map((p) => p.name);
   const friendLine =
     friendNames.length === 0
-      ? `${count} going`
+      ? venue.vibe
       : friendNames.length === 1
         ? `${friendNames[0]} is going`
         : `${friendNames.slice(0, 2).join(", ")}${
