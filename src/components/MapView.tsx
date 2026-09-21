@@ -149,19 +149,28 @@ export default function MapView({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const isMobile = isMobileViewport();
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: MAP_STYLES[themeRef.current],
-      // On mobile, sit slightly north so pins fall between the header and the rail.
-      center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
-      zoom: isMobile ? 13.6 : 14.6,
-      minZoom: 12,
-      maxZoom: 18,
-      pitch: 0,
-      attributionControl: { compact: false },
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: MAP_STYLES[themeRef.current],
+        // On mobile, sit slightly north so pins fall between the header and the rail.
+        center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
+        zoom: isMobile ? 13.6 : 14.6,
+        minZoom: 12,
+        maxZoom: 18,
+        pitch: 0,
+        attributionControl: { compact: false },
+      });
+    } catch (err) {
+      console.error("Map failed to start", err);
+      return;
+    }
     map.touchZoomRotate.disableRotation();
     map.dragRotate.disable();
+    map.on("error", (e) => {
+      console.error("Map error", e.error ?? e);
+    });
     map.on("click", (e) => {
       if (pickModeRef.current) {
         onPickRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat });
