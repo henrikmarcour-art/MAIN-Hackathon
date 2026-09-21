@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "dev:clean": "node scripts/clean-and-dev.mjs",
+    "build": "npm run map:style && next build",
     "start": "next start",
     "lint": "next lint",
-    "map:style": "node scripts/build-maasnow-map-style.mjs",
-    "prebuild": "npm run map:style"
+    "map:style": "node scripts/build-maasnow-map-style.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^5.6.0",
