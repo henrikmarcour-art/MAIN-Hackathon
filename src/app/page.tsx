@@ -123,7 +123,13 @@ export default function Home() {
         focusId={focusId}
       />
 
-      <TopBar filter={filter} onFilter={handleFilter} totalGoing={totalGoing} />
+      {tab !== "profile" && (
+        <TopBar filter={filter} onFilter={handleFilter} totalGoing={totalGoing} />
+      )}
+
+      {tab === "profile" && (
+        <div className="animate-fade pointer-events-none absolute inset-0 z-10 bg-graphite/20 backdrop-blur-[2px]" />
+      )}
 
       {pendingInvites.length > 0 && tab === "map" && (
         <div className="pointer-events-none absolute inset-x-0 top-[132px] z-20 flex justify-center px-4 md:justify-start md:px-6 md:top-[140px]">
