@@ -3,18 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { currentUser, type Person, type Venue } from "@/data/events";
 import {
+  loadEventChat,
+  saveEventChat,
+  type StoredChatMessage,
+} from "@/lib/event-chat";
+import {
   buildAttendeeList,
   isFriendAttendee,
   totalGoingCount,
 } from "@/lib/venue-attendees";
 import { Avatar } from "./Avatar";
-
-type ChatMessage = {
-  id: string;
-  from: Person;
-  text: string;
-  at: string;
-};
 
 type Props = {
   venue: Venue;
@@ -22,17 +20,22 @@ type Props = {
   onClose: () => void;
 };
 
-function seedPrivateChat(venue: Venue): ChatMessage[] {
-  const host = venue.friendsGoing.find((p) => p.id === venue.hostId);
-  if (!host) return [];
-  return [
-    {
-      id: "seed-1",
-      from: host,
-      text: "Door code is 2847 — ping me when you’re on the stairs.",
-      at: "20:41",
-    },
-  ];
+function displayName(p: Person): string {
+  return p.id === currentUser.id ? "You" : p.name;
+}
+
+function matchesSearch(p: Person, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  const haystack = [
+    displayName(p),
+    p.name,
+    p.initials,
+    currentUser.name,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
 }
 
 export default function AttendeeListSheet({
@@ -41,16 +44,33 @@ export default function AttendeeListSheet({
   onClose,
 }: Props) {
   const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(() =>
-    venue.isPrivate ? seedPrivateChat(venue) : []
-  );
+  const [peopleQuery, setPeopleQuery] = useState("");
+  const [messages, setMessages] = useState<StoredChatMessage[]>([]);
+  const [chatReady, setChatReady] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   const attendees = useMemo(
     () => buildAttendeeList(venue, userGoing),
     [venue, userGoing]
   );
+  const filteredAttendees = useMemo(
+    () => attendees.filter((p) => matchesSearch(p, peopleQuery.trim())),
+    [attendees, peopleQuery]
+  );
   const total = totalGoingCount(venue, userGoing);
+  const trimmedQuery = peopleQuery.trim();
+
+  useEffect(() => {
+    setMessages(loadEventChat(venue));
+    setChatReady(true);
+    setPeopleQuery("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload chat only when switching events
+  }, [venue.id]);
+
+  useEffect(() => {
+    if (!chatReady || !venue.isPrivate) return;
+    saveEventChat(venue.id, messages);
+  }, [messages, venue.id, venue.isPrivate, chatReady]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -167,45 +187,82 @@ export default function AttendeeListSheet({
           </div>
         )}
 
+        <div className="shrink-0 border-b border-line/80 px-4 py-2.5">
+          <label className="sr-only" htmlFor="attendee-search">
+            Search people at this event
+          </label>
+          <div className="relative">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-graphite-muted"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              aria-hidden
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3-3" />
+            </svg>
+            <input
+              id="attendee-search"
+              type="search"
+              value={peopleQuery}
+              onChange={(e) => setPeopleQuery(e.target.value)}
+              placeholder="Search people…"
+              autoComplete="off"
+              className="h-10 w-full rounded-xl border border-line bg-surface-2/80 pl-9 pr-3 text-[14px] text-graphite outline-none placeholder:text-graphite-muted focus:border-cobalt/40 focus:bg-surface"
+            />
+          </div>
+        </div>
+
         <div
           ref={listRef}
           className="min-h-0 flex-1 overflow-y-auto px-3 py-2"
         >
-          <ul className="divide-y divide-line/60">
-            {attendees.map((p) => {
-              const isYou = p.id === currentUser.id;
-              const isFriend = isFriendAttendee(venue, p);
-              const isHost = venue.hostId === p.id;
-              return (
-                <li
-                  key={p.id}
-                  className="flex items-center gap-3 py-2.5 pl-1 pr-2"
-                >
-                  <Avatar person={p} size={36} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-[15px] font-semibold text-graphite">
-                        {isYou ? "You" : p.name}
-                      </span>
-                      {isHost && (
-                        <span className="shrink-0 rounded-full bg-violet/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet">
-                          Host
+          {trimmedQuery && filteredAttendees.length === 0 ? (
+            <p className="px-2 py-6 text-center text-[14px] font-medium text-graphite-muted">
+              no people found
+            </p>
+          ) : (
+            <ul className="divide-y divide-line/60">
+              {filteredAttendees.map((p) => {
+                const isYou = p.id === currentUser.id;
+                const isFriend = isFriendAttendee(venue, p);
+                const isHost = venue.hostId === p.id;
+                return (
+                  <li
+                    key={p.id}
+                    className="flex items-center gap-3 py-2.5 pl-1 pr-2"
+                  >
+                    <Avatar person={p} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-[15px] font-semibold text-graphite">
+                          {displayName(p)}
                         </span>
-                      )}
-                      {isFriend && !isHost && (
-                        <span className="shrink-0 rounded-full bg-cobalt/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cobalt">
-                          Friend
-                        </span>
-                      )}
+                        {isHost && (
+                          <span className="shrink-0 rounded-full bg-violet/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet">
+                            Host
+                          </span>
+                        )}
+                        {isFriend && !isHost && (
+                          <span className="shrink-0 rounded-full bg-cobalt/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cobalt">
+                            Friend
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[12px] text-graphite-muted">
+                        {isYou ? "On your list tonight" : "Going tonight"}
+                      </p>
                     </div>
-                    <p className="text-[12px] text-graphite-muted">
-                      {isYou ? "On your list tonight" : "Going tonight"}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
     </div>
