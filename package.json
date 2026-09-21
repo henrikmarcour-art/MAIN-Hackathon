@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "map:style": "node scripts/build-maasnow-map-style.mjs",
+    "prebuild": "npm run map:style"
   },
   "dependencies": {
     "maplibre-gl": "^5.6.0",
