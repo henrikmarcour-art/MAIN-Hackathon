@@ -1,8 +1,8 @@
 # MaasNow
 
-See where Maastricht is going tonight. Mobile-first web app: an Apple-style map of Maastricht with social markers for bars, clubs and events, an "I'm going" interaction, and private invitations that unlock violet markers on the map.
+See where Maastricht is going tonight. MaasNow is a mobile-first web app: a map of the city with social markers for bars, clubs and events, an "I'm going" interaction, and private invitations that unlock violet markers on the map.
 
-**Phase 1 (this build):** local sample data, no backend, no auth.
+This build runs on local sample data. There is no backend and no auth yet.
 
 ## Run locally
 
@@ -11,68 +11,75 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Test at 390 × 844 (iPhone) and at desktop width.
+Open [http://localhost:3000](http://localhost:3000). The layout is designed for a phone (390 × 844) and also works at desktop width.
 
-## Demo flow
+## What you can do
 
-1. Map opens on Maastricht.
-2. Filter **Bars** or **Clubs**.
-3. Tap a busy (orange) marker → bottom sheet with time, vibe, price, attendees.
-4. Tap **I'm going** → count increases, button becomes **You're going**.
-5. Tap **Leo invited you** → invitation card → **Accept invitation**.
-6. **Leo's Rooftop** appears as a violet marker and is added to your plans.
+1. The map opens on Maastricht (OpenFreeMap, light or night).
+2. Filter by **Bars**, **Clubs**, **Friends** or **Trending**, or search from the capsule.
+3. Tap a marker to open the sheet: time, vibe, price, who is going.
+4. Tap **I'm going**. The count updates and the button becomes **You're going**.
+5. Open **Leo invited you**, then **Accept invitation**. **Leo's Rooftop** appears as a violet marker and is added to your plans.
+6. **Create** a public or private night, including picking a spot on the map.
+7. **For You** and **Profile** sit in the bottom navigation next to the map.
+
+Private venues stay hidden until the invitation is accepted, or until you are the host.
 
 ## Structure
 
 ```
 src/
   app/
-    layout.tsx        metadata + viewport
-    page.tsx          all app state (filter, selection, going, invites, tab)
-    globals.css       theme tokens, marker styles
+    layout.tsx              title, description, viewport
+    page.tsx                app state: filter, selection, going, invites, tabs
+    globals.css             theme tokens and marker styles
+    api/places/route.ts     place search used by Create
   components/
-    MapView.tsx       MapLibre map + DOM markers (CARTO Positron basemap)
-    TopBar.tsx        "MaasNow · Maastricht, tonight" + category pills
-    EventSheet.tsx    bottom sheet with "I'm going"
-    InviteCard.tsx    invite chip + Apple Invites-style card
-    BottomNav.tsx     Map · For You · Create · Profile
-    TabPanel.tsx      lightweight For You / Create / Profile panels
+    MapView.tsx             MapLibre map and markers
+    map/                    search, discovery chips, actions, mode sheet
+    TopBar.tsx              title and category filters
+    EventSheet.tsx          venue sheet and "I'm going"
+    InviteCard.tsx          invite chip and invitation card
+    ForYouPanel.tsx         For You tab
+    CreatePanel.tsx         public and private night flow
+    ProfilePanel.tsx        profile tab
+    BottomNav.tsx           Map · For You · Create · Profile
     Avatar.tsx
   data/
-    events.ts         ~9 Maastricht venues/events, people, invitations
+    events.ts               Maastricht venues, people, invitations
+  lib/
+    places.ts               local place search
 ```
 
-## Design tokens
+## Design
 
-Graphite text · warm off-white surfaces · lime accent · orange = busy nightlife · violet = private events only.
+Graphite text, warm off-white surfaces, lime accent. Orange marks a busy night. Violet is reserved for private events.
 
-## Team workflow
+## Team
 
-`main` always stays runnable. Everyone works on their own branch and opens a PR back into `main`; merge small and often (every 30–45 min) to avoid conflicts.
+`main` stays runnable. Each person works on a branch and opens a pull request back into `main`. Keep changes small and merge often.
 
-| Branch         | Owner  | Files                                                                              |
-| -------------- | ------ | ----------------------------------------------------------------------------------- |
-| `feat/map`     | Henrik | `src/components/MapView.tsx`, marker styles in `src/app/globals.css`                |
-| `feat/events`  | Leo    | `src/components/EventSheet.tsx`, `InviteCard.tsx`, `ForYouPanel.tsx`, `CreatePanel.tsx`, `src/data/events.ts` |
-| `feat/profile` | Thies  | `src/components/ProfilePanel.tsx`, `src/components/Avatar.tsx`                      |
+| Branch         | Owner  | Files                                                                 |
+| -------------- | ------ | --------------------------------------------------------------------- |
+| `feat/map`     | Henrik | `src/components/MapView.tsx`, marker styles in `src/app/globals.css` |
+| `feat/events`  | Leo    | `EventSheet.tsx`, `InviteCard.tsx`, `ForYouPanel.tsx`, `CreatePanel.tsx`, `src/data/events.ts` |
+| `feat/profile` | Thies  | `src/components/ProfilePanel.tsx`, `src/components/Avatar.tsx`       |
 
-Shared / handle-with-care (touching these can cause merge conflicts — keep changes small and pull often):
+Shared files, change them carefully:
 
-- `src/app/page.tsx` — wires everything together (state, props). If you need a new prop on your component, add it here too, then push fast.
-- `src/data/events.ts` — sample data + types. Leo owns the content, but everyone reads from it.
-- `src/components/BottomNav.tsx`, `TopBar.tsx` — shared chrome.
-
-Day-to-day loop:
+- `src/app/page.tsx` wires state and props together.
+- `src/data/events.ts` is the sample data everyone reads. Leo owns the content.
+- `src/components/BottomNav.tsx` and `TopBar.tsx` are shared chrome.
 
 ```bash
 git checkout feat/map          # or feat/events / feat/profile
-git pull origin main --rebase  # get the latest before you start
-# ...edit your files...
+git pull origin main --rebase
+# edit, then:
 git add -A && git commit -m "..."
 git push -u origin feat/map
-# open a PR into main, teammate skims, merge
+# open a pull request into main
 ```
 
-## Next (Phase 2)
+## Next
 
-Supabase (auth, events, invites, RLS), event creation, Vercel deployment.
+Supabase for auth, events, invites and row-level security, plus a Vercel deployment.
