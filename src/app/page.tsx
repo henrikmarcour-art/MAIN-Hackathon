@@ -6,7 +6,9 @@ import { invitations, venues as allVenues } from "@/data/events";
 import TopBar, { type Filter } from "@/components/TopBar";
 import EventSheet from "@/components/EventSheet";
 import BottomNav, { type Tab } from "@/components/BottomNav";
-import TabPanel from "@/components/TabPanel";
+import ForYouPanel from "@/components/ForYouPanel";
+import CreatePanel from "@/components/CreatePanel";
+import ProfilePanel from "@/components/ProfilePanel";
 import { InviteCard, InviteChip } from "@/components/InviteCard";
 
 // MapLibre touches `window`; load it client-side only.
@@ -149,9 +151,18 @@ export default function Home() {
         />
       )}
 
-      {tab !== "map" && (
-        <TabPanel
-          tab={tab}
+      {tab === "foryou" && (
+        <ForYouPanel
+          venues={visibleVenues}
+          goingIds={goingIds}
+          onOpenVenue={handleSelect}
+        />
+      )}
+
+      {tab === "create" && <CreatePanel />}
+
+      {tab === "profile" && (
+        <ProfilePanel
           venues={visibleVenues}
           goingIds={goingIds}
           onOpenVenue={handleSelect}
