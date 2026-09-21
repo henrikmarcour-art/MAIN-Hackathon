@@ -12,17 +12,64 @@ const KIND_FROM_OSM: Record<string, PlaceKind> = {
   event_venue: "event",
 };
 
-export function searchLocalPlaces(query: string): PlaceHit[] {
-  const q = query.trim().toLowerCase();
+const KIND_WORDS: Record<string, PlaceKind> = {
+  bar: "bar",
+  bars: "bar",
+  cafe: "bar",
+  café: "bar",
+  pub: "bar",
+  club: "club",
+  clubs: "club",
+  nightclub: "club",
+  food: "food",
+  eat: "food",
+  dinner: "food",
+  restaurant: "food",
+  event: "event",
+  events: "event",
+  venue: "event",
+  cinema: "event",
+  theatre: "event",
+};
+
+function normalise(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
+ * Rank a place against the query. Higher is better, 0 means "no match".
+ * Name matches outrank address matches, and matches at a word boundary
+ * outrank matches in the middle of a word.
+ */
+function score(place: Place, q: string): number {
+  const name = normalise(place.name);
+  const address = normalise(place.address);
+  const street = address.split("·")[0].trim();
+
+  if (name === q) return 100;
+  if (name.startsWith(q)) return 90;
+  if (new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(name))
+    return 80;
+  if (name.includes(q)) return 60;
+  if (street.startsWith(q)) return 50;
+  if (street.includes(q)) return 40;
+  if (address.includes(q)) return 30;
+  if (KIND_WORDS[q] === place.kind) return 20;
+  return 0;
+}
+
+export function searchLocalPlaces(query: string, limit = 12): PlaceHit[] {
+  const q = normalise(query.trim());
   if (q.length < 1) return [];
   return maastrichtPlaces
-    .filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.address.toLowerCase().includes(q) ||
-        p.kind.includes(q)
-    )
-    .map((p) => ({ ...p, source: "local" as const }));
+    .map((p) => ({ p, s: score(p, q) }))
+    .filter((r) => r.s > 0)
+    .sort((a, b) => b.s - a.s || a.p.name.localeCompare(b.p.name, "nl"))
+    .slice(0, limit)
+    .map((r) => ({ ...r.p, source: "local" as const }));
 }
 
 function formatPhotonAddress(props: Record<string, unknown>): string {
@@ -84,11 +131,19 @@ export async function reverseGeocode(
   return name ? `${name} · ${address}` : address;
 }
 
+/** Local (curated, instant) hits first, then anything new from live OSM. */
 export function mergePlaceHits(
   local: PlaceHit[],
   remote: PlaceHit[]
 ): PlaceHit[] {
-  const seen = new Set(local.map((p) => p.name.toLowerCase()));
-  const extra = remote.filter((p) => !seen.has(p.name.toLowerCase()));
-  return [...local, ...extra].slice(0, 10);
+  const key = (p: PlaceHit) =>
+    `${normalise(p.name)}|${normalise(p.address).split("·")[0].trim()}`;
+  const seen = new Set(local.map(key));
+  const extra = remote.filter((p) => {
+    const k = key(p);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  return [...local, ...extra].slice(0, 14);
 }
