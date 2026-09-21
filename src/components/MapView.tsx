@@ -22,6 +22,9 @@ type Props = {
   showRadar: boolean;
   /** Increment to request a recenter */
   recenterNonce: number;
+  pickMode?: boolean;
+  pickLngLat?: { lng: number; lat: number } | null;
+  onPick?: (lngLat: { lng: number; lat: number }) => void;
 };
 
 const MIN_SIZE = 34;
@@ -124,15 +127,23 @@ export default function MapView({
   theme,
   showRadar,
   recenterNonce,
+  pickMode = false,
+  pickLngLat = null,
+  onPick,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const themeRef = useRef<MapTheme>(theme);
+  const pickMarkerRef = useRef<maplibregl.Marker | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
+  const pickModeRef = useRef(pickMode);
+  pickModeRef.current = pickMode;
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
 
   // Init map once
   useEffect(() => {
@@ -151,7 +162,13 @@ export default function MapView({
     });
     map.touchZoomRotate.disableRotation();
     map.dragRotate.disable();
-    map.on("click", () => onMapClickRef.current());
+    map.on("click", (e) => {
+      if (pickModeRef.current) {
+        onPickRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+        return;
+      }
+      onMapClickRef.current();
+    });
     mapRef.current = map;
     const markers = markersRef.current;
     return () => {
@@ -213,6 +230,10 @@ export default function MapView({
       applyMarkerState(el, v, state);
       el.addEventListener("click", (e) => {
         e.stopPropagation();
+        if (pickModeRef.current) {
+          onPickRef.current?.({ lng: v.lng, lat: v.lat });
+          return;
+        }
         onSelectRef.current(v.id);
       });
       const marker = new maplibregl.Marker({ element: el, anchor: "center" })
@@ -221,6 +242,30 @@ export default function MapView({
       markers.set(v.id, marker);
     }
   }, [venues, selectedId, goingIds, showRadar]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.getCanvas().style.cursor = pickMode ? "crosshair" : "";
+    if (!pickMode) {
+      pickMarkerRef.current?.remove();
+      pickMarkerRef.current = null;
+      return;
+    }
+    if (!pickLngLat) return;
+    if (!pickMarkerRef.current) {
+      const el = document.createElement("div");
+      el.className = "mn-pick-pin";
+      pickMarkerRef.current = new maplibregl.Marker({
+        element: el,
+        anchor: "bottom",
+      })
+        .setLngLat([pickLngLat.lng, pickLngLat.lat])
+        .addTo(map);
+    } else {
+      pickMarkerRef.current.setLngLat([pickLngLat.lng, pickLngLat.lat]);
+    }
+  }, [pickMode, pickLngLat]);
 
   // Ease to a focused venue
   useEffect(() => {

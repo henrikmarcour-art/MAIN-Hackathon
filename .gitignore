@@ -16,6 +16,9 @@ npm-debug.log*
 .env*
 !.env.example
 
+# local Netlify CLI / anonymous deploys
+.netlify/
+
 # hackathon reference material (not part of the app)
 *.pdf
 *.rtf

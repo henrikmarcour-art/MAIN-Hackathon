@@ -2,12 +2,17 @@
 
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { invitations, venues as allVenues } from "@/data/events";
+import {
+  invitations,
+  venues as allVenues,
+  currentUser,
+  type Venue,
+} from "@/data/events";
 import TopBar from "@/components/TopBar";
 import EventSheet from "@/components/EventSheet";
 import BottomNav, { type Tab } from "@/components/BottomNav";
 import ForYouPanel from "@/components/ForYouPanel";
-import CreatePanel from "@/components/CreatePanel";
+import CreatePanel, { type PickedLngLat } from "@/components/CreatePanel";
 import ProfilePanel from "@/components/ProfilePanel";
 import { InviteCard, InviteChip } from "@/components/InviteCard";
 import MapActions from "@/components/map/MapActions";
@@ -38,6 +43,9 @@ export default function Home() {
   );
   const [openInviteId, setOpenInviteId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("map");
+  const [createdVenues, setCreatedVenues] = useState<Venue[]>([]);
+  const [mapPickActive, setMapPickActive] = useState(false);
+  const [mapPick, setMapPick] = useState<PickedLngLat | null>(null);
 
   // Map UI state
   const [theme, setTheme] = useState<MapTheme>("light");
@@ -45,13 +53,21 @@ export default function Home() {
   const [modeOpen, setModeOpen] = useState(false);
   const [recenterNonce, setRecenterNonce] = useState(0);
 
-  // Private venues are only visible once their invitation is accepted.
+  const catalog = useMemo(
+    () => [...allVenues, ...createdVenues],
+    [createdVenues]
+  );
+
+  // Private venues are only visible once their invitation is accepted,
+  // or if the current user is hosting them.
   const visibleVenues = useMemo(
     () =>
-      allVenues.filter((v) =>
-        v.isPrivate ? acceptedVenueIds.has(v.id) : true
+      catalog.filter((v) =>
+        v.isPrivate
+          ? acceptedVenueIds.has(v.id) || v.hostId === currentUser.id
+          : true
       ),
-    [acceptedVenueIds]
+    [acceptedVenueIds, catalog]
   );
 
   const filteredVenues = useMemo(
@@ -86,14 +102,18 @@ export default function Home() {
   );
   const openInvite = invitations.find((i) => i.id === openInviteId) ?? null;
   const openInviteVenue = openInvite
-    ? allVenues.find((v) => v.id === openInvite.venueId) ?? null
+    ? catalog.find((v) => v.id === openInvite.venueId) ?? null
     : null;
+
+  const onMap = tab === "map" && !mapPickActive;
 
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id);
     setFocusId(id);
     setTab("map");
     setModeOpen(false);
+    setMapPickActive(false);
+    setMapPick(null);
   }, []);
 
   const handleFilter = useCallback((f: Filter) => {
@@ -118,6 +138,8 @@ export default function Home() {
     setOpenInviteId(null);
     setFilter("all");
     setTab("map");
+    setMapPickActive(false);
+    setMapPick(null);
     // Let the marker mount, then focus it.
     setTimeout(() => {
       setSelectedId(venueId);
@@ -131,7 +153,32 @@ export default function Home() {
     setOpenInviteId(null);
   }, [openInvite]);
 
-  const onMap = tab === "map";
+  const handleCreate = useCallback((venue: Venue) => {
+    setCreatedVenues((prev) => [...prev, venue]);
+    setGoingIds((prev) => new Set(prev).add(venue.id));
+    setMapPickActive(false);
+    setMapPick(null);
+    setFilter("all");
+    setTab("map");
+    setTimeout(() => {
+      setSelectedId(venue.id);
+      setFocusId(venue.id);
+    }, 50);
+  }, []);
+
+  const startMapPick = useCallback(() => {
+    setSelectedId(null);
+    setMapPick(null);
+    setMapPickActive(true);
+    setModeOpen(false);
+  }, []);
+
+  const cancelMapPick = useCallback(() => {
+    setMapPickActive(false);
+    setMapPick(null);
+  }, []);
+
+  const showTopBar = tab !== "profile" && !mapPickActive;
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-surface-2">
@@ -141,6 +188,7 @@ export default function Home() {
         goingIds={goingIds}
         onSelect={handleSelect}
         onMapClick={() => {
+          if (mapPickActive) return;
           setSelectedId(null);
           setModeOpen(false);
         }}
@@ -148,15 +196,20 @@ export default function Home() {
         theme={theme}
         showRadar={showRadar}
         recenterNonce={recenterNonce}
+        pickMode={mapPickActive}
+        pickLngLat={mapPick}
+        onPick={setMapPick}
       />
 
-      <TopBar
-        filter={filter}
-        onFilter={handleFilter}
-        venues={visibleVenues}
-        goingIds={goingIds}
-        onPick={handleSelect}
-      />
+      {showTopBar && (
+        <TopBar
+          filter={filter}
+          onFilter={handleFilter}
+          venues={visibleVenues}
+          goingIds={goingIds}
+          onPick={handleSelect}
+        />
+      )}
 
       {onMap && (
         <MapActions
@@ -170,10 +223,14 @@ export default function Home() {
         />
       )}
 
+      {tab === "profile" && (
+        <div className="animate-fade pointer-events-none absolute inset-0 z-10 bg-graphite/20 backdrop-blur-[2px]" />
+      )}
+
       {pendingInvites.length > 0 && onMap && (
         <div className="pointer-events-none absolute inset-x-0 top-[calc(max(12px,env(safe-area-inset-top))+112px)] z-20 flex justify-center px-14 md:justify-start md:px-6 md:top-[76px]">
           {pendingInvites.map((inv) => {
-            const venue = allVenues.find((v) => v.id === inv.venueId);
+            const venue = catalog.find((v) => v.id === inv.venueId);
             if (!venue) return null;
             return (
               <InviteChip
@@ -213,7 +270,15 @@ export default function Home() {
         />
       )}
 
-      {tab === "create" && <CreatePanel />}
+      {tab === "create" && (
+        <CreatePanel
+          mapPickActive={mapPickActive}
+          mapPick={mapPick}
+          onRequestMapPick={startMapPick}
+          onCancelMapPick={cancelMapPick}
+          onCreate={handleCreate}
+        />
+      )}
 
       {tab === "profile" && (
         <ProfilePanel
@@ -223,7 +288,16 @@ export default function Home() {
         />
       )}
 
-      <BottomNav tab={tab} onChange={setTab} />
+      <BottomNav
+        tab={tab}
+        onChange={(next) => {
+          if (next !== "create") {
+            setMapPickActive(false);
+            setMapPick(null);
+          }
+          setTab(next);
+        }}
+      />
 
       <MapModeSheet
         open={onMap && modeOpen}

@@ -1,6 +1,6 @@
 "use client";
 
-import { categoryMeta, people, type Venue } from "@/data/events";
+import { categoryMeta, currentUser, people, type Venue } from "@/data/events";
 import { AvatarStack } from "./Avatar";
 
 type Props = {
@@ -21,7 +21,13 @@ export default function EventSheet({
   onClose,
 }: Props) {
   const count = venue.goingCount + (going ? 1 : 0);
-  const host = venue.hostId ? people[venue.hostId] : null;
+  const host =
+    venue.hostId === currentUser.id
+      ? currentUser
+      : venue.hostId
+        ? people[venue.hostId]
+        : null;
+  const isHost = venue.hostId === currentUser.id;
   const accent = venue.isPrivate
     ? "text-violet"
     : venue.busy
@@ -69,9 +75,11 @@ export default function EventSheet({
                 <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
                 {venue.isPrivate
                   ? `Private · hosted by ${host?.name ?? "a friend"}`
-                  : venue.busy
-                    ? `${categoryLabel} · busy now`
-                    : categoryLabel}
+                  : venue.openJoin
+                    ? `${categoryLabel} · anyone can join`
+                    : venue.busy
+                      ? `${categoryLabel} · busy now`
+                      : categoryLabel}
               </div>
               <h2 className="mt-1 truncate text-[24px] font-bold leading-tight tracking-tight text-graphite">
                 {venue.name}
@@ -153,39 +161,47 @@ export default function EventSheet({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onToggleGoing}
-            aria-pressed={going}
-            className={[
-              "mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold tracking-tight transition-all active:scale-[0.98]",
-              going
-                ? "bg-graphite text-lime"
-                : venue.isPrivate
-                  ? "bg-violet text-white hover:brightness-105"
-                  : "bg-lime text-graphite hover:brightness-95",
-            ].join(" ")}
-          >
-            {going ? (
-              <>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-                You’re going
-              </>
-            ) : (
-              "I’m going"
-            )}
-          </button>
+          {isHost ? (
+            <div className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl bg-graphite text-[15px] font-bold tracking-tight text-lime">
+              You’re hosting
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onToggleGoing}
+              aria-pressed={going}
+              className={[
+                "mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold tracking-tight transition-all active:scale-[0.98]",
+                going
+                  ? "bg-graphite text-lime"
+                  : venue.isPrivate
+                    ? "bg-violet text-white hover:brightness-105"
+                    : "bg-lime text-graphite hover:brightness-95",
+              ].join(" ")}
+            >
+              {going ? (
+                <>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12l5 5L20 7" />
+                  </svg>
+                  You’re going
+                </>
+              ) : venue.isPrivate ? (
+                "Accept & go"
+              ) : (
+                "I’m going"
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
