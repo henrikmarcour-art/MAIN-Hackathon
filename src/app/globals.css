@@ -1,0 +1,211 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css" layer(base);
+
+@theme {
+  --color-graphite: #1c1c1e;
+  --color-graphite-soft: #4a4a4f;
+  --color-graphite-muted: #8a8a8f;
+  --color-surface: #faf8f4;
+  --color-surface-2: #f1eee7;
+  --color-line: #e6e2d9;
+  --color-lime: #c6f432;
+  --color-lime-deep: #9ed10e;
+  --color-orange: #ff7a1a;
+  --color-violet: #6f56ff;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --shadow-float: 0 1px 2px rgba(28, 28, 30, 0.06), 0 8px 24px rgba(28, 28, 30, 0.1);
+  --shadow-sheet: 0 -8px 40px rgba(28, 28, 30, 0.14);
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--color-surface);
+  color: var(--color-graphite);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Keep the required basemap attribution visible above the bottom nav */
+.maplibregl-ctrl-bottom-right {
+  bottom: calc(72px + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .maplibregl-ctrl-bottom-right {
+    bottom: 0;
+  }
+}
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--color-graphite-muted);
+  background: rgba(250, 248, 244, 0.85);
+  border-radius: 6px 0 0 0;
+  padding: 2px 6px;
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--color-graphite-soft);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Social marker */
+/* NOTE: never transition/transform the root — MapLibre positions it via transform. */
+.mn-marker {
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.mn-marker .pin,
+.mn-marker .badge,
+.mn-marker .lock {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mn-marker:hover .pin {
+  transform: scale(1.08);
+}
+.mn-marker.is-active .pin {
+  transform: scale(1.16);
+}
+.mn-marker.is-active .badge {
+  transform: translate(3px, -3px);
+}
+.mn-marker .pin {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2.5px solid var(--pin-color, var(--color-lime));
+  box-shadow: 0 1px 2px rgba(28, 28, 30, 0.12), 0 6px 16px rgba(28, 28, 30, 0.18);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.mn-marker .pin .count {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-graphite);
+  font-variant-numeric: tabular-nums;
+}
+.mn-marker .pin .avatars {
+  display: flex;
+}
+.mn-marker .pin .avatars span {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  border: 1.5px solid #fff;
+  margin-left: -6px;
+}
+.mn-marker .pin .avatars span:first-child {
+  margin-left: 0;
+}
+.mn-marker .badge {
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: var(--pin-color, var(--color-lime));
+  color: var(--pin-badge-text, var(--color-graphite));
+  font-size: 10px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  font-variant-numeric: tabular-nums;
+}
+.mn-marker .ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border: 1.5px solid var(--pin-color, var(--color-lime));
+  opacity: 0.35;
+}
+.mn-marker .ring.r1 {
+  width: 64px;
+  height: 64px;
+}
+.mn-marker .ring.r2 {
+  width: 88px;
+  height: 88px;
+  opacity: 0.18;
+  animation: mn-pulse 2.6s ease-out infinite;
+}
+@keyframes mn-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.86);
+    opacity: 0.28;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 0;
+  }
+}
+.mn-marker .lock {
+  position: absolute;
+  left: -3px;
+  bottom: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-violet);
+  border: 2px solid #fff;
+  display: grid;
+  place-items: center;
+}
+
+@keyframes mn-sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-sheet {
+  animation: mn-sheet-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes mn-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade {
+  animation: mn-fade-in 200ms ease-out;
+}
