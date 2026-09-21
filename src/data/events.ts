@@ -29,6 +29,10 @@ export type Venue = {
   busy?: boolean;
   isPrivate?: boolean;
   hostId?: string;
+  /** Public nights anyone in Maastricht can join. */
+  openJoin?: boolean;
+  /** Friend account ids invited to a private (or public) night. */
+  invitedIds?: string[];
 };
 
 export type Invitation = {
@@ -53,6 +57,20 @@ export const currentUser: Person = {
   name: "Henrik",
   initials: "H",
   color: "#9ed10e",
+};
+
+/** Accounts the current user can invite (Phase 1 sample). */
+export const friends: Person[] = Object.values(people);
+
+export type PlaceKind = "bar" | "club" | "event" | "food" | "other";
+
+export type Place = {
+  id: string;
+  name: string;
+  address: string;
+  lng: number;
+  lat: number;
+  kind: PlaceKind;
 };
 
 export const venues: Venue[] = [
@@ -197,6 +215,75 @@ export const venues: Venue[] = [
     isPrivate: true,
     hostId: "leo",
   },
+];
+
+const extraPlaces: Place[] = [
+  {
+    id: "place-cafe-forum",
+    name: "Café Forum",
+    address: "Mariastraat 7 · Centrum",
+    lng: 5.6889,
+    lat: 50.8487,
+    kind: "bar",
+  },
+  {
+    id: "place-prevenir",
+    name: "Prevenir",
+    address: "Platielstraat 6 · Centrum",
+    lng: 5.6908,
+    lat: 50.8498,
+    kind: "bar",
+  },
+  {
+    id: "place-tribunaal",
+    name: "In Den Ouden Vogelstruys",
+    address: "Vrijthof 15 · Centrum",
+    lng: 5.6892,
+    lat: 50.8491,
+    kind: "bar",
+  },
+  {
+    id: "place-night-live",
+    name: "Night Live",
+    address: "Kesselskade 43 · Centrum",
+    lng: 5.6944,
+    lat: 50.8496,
+    kind: "club",
+  },
+  {
+    id: "place-moos",
+    name: "MOOS",
+    address: "Capucijnenstraat 21 · Kommelkwartier",
+    lng: 5.6856,
+    lat: 50.8499,
+    kind: "club",
+  },
+  {
+    id: "place-petit-bonheur",
+    name: "Petit Bonheur",
+    address: "Rechtstraat 42 · Wyck",
+    lng: 5.7008,
+    lat: 50.8488,
+    kind: "food",
+  },
+];
+
+function categoryToKind(category: Category): PlaceKind {
+  if (category === "private") return "other";
+  return category;
+}
+
+/** Searchable Maastricht spots (venues + extra bars/clubs/food). */
+export const maastrichtPlaces: Place[] = [
+  ...venues.map((v) => ({
+    id: `venue-${v.id}`,
+    name: v.name,
+    address: v.address,
+    lng: v.lng,
+    lat: v.lat,
+    kind: categoryToKind(v.category),
+  })),
+  ...extraPlaces,
 ];
 
 export const invitations: Invitation[] = [

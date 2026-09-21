@@ -209,3 +209,13 @@ body {
 .animate-fade {
   animation: mn-fade-in 200ms ease-out;
 }
+
+.mn-pick-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--color-lime);
+  border: 2.5px solid #1c1c1e;
+  transform: rotate(-45deg);
+  box-shadow: 0 6px 16px rgba(28, 28, 30, 0.28);
+}
