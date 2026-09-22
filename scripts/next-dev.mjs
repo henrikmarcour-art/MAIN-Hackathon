@@ -114,8 +114,23 @@ Keep this terminal open while you use the app in the browser.
 Press Ctrl+C to stop.
 `);
 
-const child = spawn(process.execPath, [nextBin, "dev", "-p", String(PORT)], {
-  stdio: "inherit",
-  cwd,
+const child = spawn(
+  process.execPath,
+  [nextBin, "dev", "-p", String(PORT), "-H", "127.0.0.1"],
+  {
+    stdio: "inherit",
+    cwd,
+    env: process.env,
+  }
+);
+child.on("error", (err) => {
+  console.error("\nFailed to start Next.js dev server:", err.message);
+  console.error("Try: npm install && npm run up\n");
+  process.exit(1);
 });
-child.on("exit", (code) => process.exit(code ?? 0));
+child.on("exit", (code) => {
+  if (code && code !== 0) {
+    console.error(`\nDev server exited with code ${code}. Try: npm run up\n`);
+  }
+  process.exit(code ?? 0);
+});

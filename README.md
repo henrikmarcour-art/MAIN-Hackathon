@@ -6,29 +6,36 @@ This build runs on local sample data. There is no backend and no auth yet.
 
 ## Run locally
 
+**After every `git pull` or merge**, start the app from the project folder:
+
 ```bash
 npm install
-npm run dev
+npm run up
 ```
 
-(`npm run dev` clears a broken `.next` automatically after a production build. Use `npm run dev:fast` only if you did **not** run `npm run build` since the last dev session.)
+Wait until the terminal shows **`Ready`**, then open [http://localhost:3000](http://localhost:3000).
 
-Open [http://localhost:3000](http://localhost:3000). **Leave the terminal running** — if you close it, Safari will show “Can’t connect to the server”.
+**Leave that terminal open.** If you close it, the browser shows `ERR_CONNECTION_REFUSED` / “Can’t connect to the server” — nothing is wrong with the code; the dev server is simply off.
+
+| Command | When to use |
+|--------|-------------|
+| `npm run up` | **Default** — clean cache + start dev on port 3000 |
+| `npm run dev` | Start dev (auto-fixes bad `.next` when needed) |
+| `npm run doctor` | Diagnose connection refused |
+| `npm start` | **Not for daily dev** — production server after `npm run build` |
 
 The layout is designed for a phone (390 × 844) and also works at desktop width.
 
-### Safari / browser “Can’t connect to the server”
+### `ERR_CONNECTION_REFUSED` on http://localhost:3000
 
-The dev server is **not running**. In the project folder:
+Nothing is listening on port **3000** — start the dev server:
 
 ```bash
-npm install
-npm run dev
+npm run doctor   # optional: explains what’s wrong
+npm run up
 ```
 
-Wait until you see `Ready` and `http://localhost:3000`, then reload the browser. If port 3000 was stuck on an old process, `npm run dev` tries to free it; if that fails, run `npm run dev:clean`.
-
-Do **not** use `npm start` for everyday work — that is for production after `npm run build`.
+Keep the terminal open until you see `Ready`, then reload the browser.
 
 ### “Internal Server Error” on localhost:3000
 
