@@ -2,6 +2,9 @@
   "name": "maasnow",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "predev": "node -e \"const fs=require('fs');if(!fs.existsSync('node_modules/next')){console.error('\\nRun npm install first, then npm run dev.\\n');process.exit(1)}\"",
     "dev": "node scripts/next-dev.mjs",
@@ -17,7 +20,7 @@
   },
   "dependencies": {
     "maplibre-gl": "^5.6.0",
-    "next": "15.5.4",
+    "next": "^15.5.25",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
