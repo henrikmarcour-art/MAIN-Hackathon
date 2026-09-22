@@ -15,6 +15,8 @@ npm run up
 
 Wait until the terminal shows **`Ready`**, then open [http://localhost:3000](http://localhost:3000).
 
+In **Cursor / VS Code**: `Terminal → Run Task… → MaasNow: Start dev (npm run up)` — keep that terminal open.
+
 **Leave that terminal open.** If you close it, the browser shows `ERR_CONNECTION_REFUSED` / “Can’t connect to the server” — nothing is wrong with the code; the dev server is simply off.
 
 | Command | When to use |
