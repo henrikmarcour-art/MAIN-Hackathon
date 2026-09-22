@@ -13,7 +13,22 @@ npm run dev
 
 (`npm run dev` clears a broken `.next` automatically after a production build. Use `npm run dev:fast` only if you did **not** run `npm run build` since the last dev session.)
 
-Open [http://localhost:3000](http://localhost:3000). The layout is designed for a phone (390 × 844) and also works at desktop width.
+Open [http://localhost:3000](http://localhost:3000). **Leave the terminal running** — if you close it, Safari will show “Can’t connect to the server”.
+
+The layout is designed for a phone (390 × 844) and also works at desktop width.
+
+### Safari / browser “Can’t connect to the server”
+
+The dev server is **not running**. In the project folder:
+
+```bash
+npm install
+npm run dev
+```
+
+Wait until you see `Ready` and `http://localhost:3000`, then reload the browser. If port 3000 was stuck on an old process, `npm run dev` tries to free it; if that fails, run `npm run dev:clean`.
+
+Do **not** use `npm start` for everyday work — that is for production after `npm run build`.
 
 ### “Internal Server Error” on localhost:3000
 

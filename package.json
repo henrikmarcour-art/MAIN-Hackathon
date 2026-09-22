@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node -e \"const fs=require('fs');if(!fs.existsSync('node_modules/next')){console.error('\\nRun npm install first, then npm run dev.\\n');process.exit(1)}\"",
     "dev": "node scripts/next-dev.mjs",
     "dev:fast": "next dev",
     "dev:clean": "node scripts/clean-and-dev.mjs",
