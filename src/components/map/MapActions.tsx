@@ -1,25 +1,25 @@
 "use client";
 
 import type { MapTheme } from "./types";
-import { LayersIcon, LocateIcon, RadarIcon } from "./icons";
+import { ClockIcon, LayersIcon, LocateIcon } from "./icons";
 
 type Props = {
   theme: MapTheme;
-  showRadar: boolean;
   modeOpen: boolean;
+  timeOpen: boolean;
   onOpenMode: () => void;
   onRecenter: () => void;
-  onToggleRadar: () => void;
+  onToggleTime: () => void;
   className?: string;
 };
 
 export default function MapActions({
   theme,
-  showRadar,
   modeOpen,
+  timeOpen,
   onOpenMode,
   onRecenter,
-  onToggleRadar,
+  onToggleTime,
   className = "",
 }: Props) {
   return (
@@ -28,6 +28,17 @@ export default function MapActions({
       role="group"
       aria-label="Map actions"
     >
+      <button
+        type="button"
+        onClick={onToggleTime}
+        aria-expanded={timeOpen}
+        aria-pressed={timeOpen}
+        aria-label={timeOpen ? "Close time slider" : "Open time slider"}
+        title="Time"
+        className={`mn-action ${timeOpen ? "is-active" : ""}`}
+      >
+        <ClockIcon size={17} />
+      </button>
       <button
         type="button"
         onClick={onOpenMode}
@@ -46,16 +57,6 @@ export default function MapActions({
         className="mn-action"
       >
         <LocateIcon size={17} />
-      </button>
-      <button
-        type="button"
-        onClick={onToggleRadar}
-        aria-pressed={showRadar}
-        aria-label="Toggle social radar"
-        title="Radar"
-        className={`mn-action ${showRadar ? "is-on" : ""}`}
-      >
-        <RadarIcon size={17} />
       </button>
     </div>
   );

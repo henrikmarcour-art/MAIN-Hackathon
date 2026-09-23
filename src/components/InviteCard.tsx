@@ -15,7 +15,7 @@ export function InviteChip({ invitation, venue, onOpen }: ChipProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="animate-fade pointer-events-auto flex items-center gap-3 rounded-full border border-violet/30 bg-surface/95 py-1.5 pl-1.5 pr-4 text-left shadow-float backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      className="animate-fade pointer-events-auto flex w-[min(100%,320px)] shrink-0 items-center gap-3 rounded-full border border-violet/30 bg-surface/95 py-1.5 pl-1.5 pr-4 text-left shadow-float backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
     >
       <Avatar person={invitation.from} size={30} />
       <span className="leading-tight">
@@ -145,7 +145,7 @@ export function InviteCard({
             </button>
           </div>
           <p className="mt-3 text-center text-[11px] text-graphite-muted">
-            Only invited guests can see this event on the map.
+            This night stays on your map even if you can’t make it.
           </p>
         </div>
       </div>
