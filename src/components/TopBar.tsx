@@ -5,6 +5,7 @@ import BrandPill from "@/components/map/BrandPill";
 import SearchCapsule from "@/components/map/SearchCapsule";
 import DiscoveryChips from "@/components/map/DiscoveryChips";
 import type { Filter } from "@/components/map/types";
+import type { CrowdQuery } from "@/lib/venue-attendance";
 
 export type { Filter } from "@/components/map/types";
 
@@ -14,6 +15,7 @@ type Props = {
   /** Venues currently visible on the map (used for search results) */
   venues: Venue[];
   goingIds: Set<string>;
+  crowd: CrowdQuery;
   onPick: (id: string) => void;
 };
 
@@ -27,6 +29,7 @@ export default function TopBar({
   onFilter,
   venues,
   goingIds,
+  crowd,
   onPick,
 }: Props) {
   return (
@@ -37,6 +40,7 @@ export default function TopBar({
           venues={venues}
           goingIds={goingIds}
           filter={filter}
+          crowd={crowd}
           onPick={onPick}
           className="px-3"
         />
@@ -52,6 +56,7 @@ export default function TopBar({
           venues={venues}
           goingIds={goingIds}
           filter={filter}
+          crowd={crowd}
           onPick={onPick}
           className="w-[420px]"
         />

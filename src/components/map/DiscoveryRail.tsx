@@ -6,6 +6,7 @@ import { AvatarStack } from "@/components/Avatar";
 import {
   attendeeCountNoun,
   displayAttendeeCount,
+  type CrowdQuery,
 } from "@/lib/venue-attendance";
 import type { Filter } from "./types";
 import { ChevronIcon } from "./icons";
@@ -14,6 +15,7 @@ type Props = {
   venues: Venue[];
   goingIds: Set<string>;
   filter: Filter;
+  crowd: CrowdQuery;
   headlineCount: number;
   onPick: (id: string) => void;
 };
@@ -28,6 +30,7 @@ export default function DiscoveryRail({
   venues,
   goingIds,
   filter,
+  crowd,
   headlineCount,
   onPick,
 }: Props) {
@@ -37,7 +40,7 @@ export default function DiscoveryRail({
   const popular = [...venues]
     .map((v) => ({
       v,
-      count: displayAttendeeCount(v, goingIds, filter),
+      count: displayAttendeeCount(v, goingIds, filter, crowd),
     }))
     .sort((a, b) => b.count - a.count);
 

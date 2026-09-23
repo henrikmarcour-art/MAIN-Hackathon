@@ -4,6 +4,7 @@ import {
   type Person,
   type Venue,
 } from "@/data/events";
+import { displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 
 const GUEST_FIRST = [
   "Emma",
@@ -72,16 +73,25 @@ function guestPerson(venueId: string, index: number): Person {
 }
 
 /** Total headcount shown on the event sheet (includes current user if marked going). */
-export function totalGoingCount(venue: Venue, userGoing: boolean): number {
-  return venue.goingCount + (userGoing ? 1 : 0);
+export function totalGoingCount(
+  venue: Venue,
+  userGoing: boolean,
+  crowd: CrowdQuery
+): number {
+  const goingIds = userGoing ? new Set([venue.id]) : new Set<string>();
+  return displayAttendeeCount(venue, goingIds, "all", crowd);
 }
 
 /**
  * Builds a stable attendee list for Phase 1: known friends & host first,
  * then synthetic guests until `totalGoingCount` is reached.
  */
-export function buildAttendeeList(venue: Venue, userGoing: boolean): Person[] {
-  const target = totalGoingCount(venue, userGoing);
+export function buildAttendeeList(
+  venue: Venue,
+  userGoing: boolean,
+  crowd: CrowdQuery
+): Person[] {
+  const target = totalGoingCount(venue, userGoing, crowd);
   const byId = new Map<string, Person>();
 
   const add = (p: Person | null | undefined) => {

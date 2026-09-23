@@ -1,6 +1,6 @@
 import type { Venue } from "@/data/events";
 import type { Filter } from "@/components/map/types";
-import { displayAttendeeCount } from "@/lib/venue-attendance";
+import { displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 import type { Map as MapLibreMap } from "maplibre-gl";
 
 /** Nightlife ramp: dark blue → violet → pink → gold */
@@ -50,12 +50,13 @@ export type HeatPoint = { lng: number; lat: number; weight: number };
 export function venuesToHeatPoints(
   venues: Venue[],
   goingIds: Set<string>,
-  filter: Filter
+  filter: Filter,
+  crowd: CrowdQuery
 ): HeatPoint[] {
   return venues.map((v) => ({
     lng: v.lng,
     lat: v.lat,
-    weight: displayAttendeeCount(v, goingIds, filter),
+    weight: displayAttendeeCount(v, goingIds, filter, crowd),
   }));
 }
 

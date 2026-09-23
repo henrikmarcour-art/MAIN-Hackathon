@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { categoryMeta, currentUser, type Venue } from "@/data/events";
 import { Avatar } from "@/components/Avatar";
-import { displayAttendeeCount } from "@/lib/venue-attendance";
+import { displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 import type { Filter } from "./types";
 import { CloseIcon, SearchIcon } from "./icons";
 
@@ -11,6 +11,7 @@ type Props = {
   venues: Venue[];
   goingIds: Set<string>;
   filter: Filter;
+  crowd: CrowdQuery;
   onPick: (id: string) => void;
   className?: string;
 };
@@ -25,6 +26,7 @@ export default function SearchCapsule({
   venues,
   goingIds,
   filter,
+  crowd,
   onPick,
   className = "",
 }: Props) {
@@ -51,7 +53,7 @@ export default function SearchCapsule({
     const list = venues
       .map((v) => ({
         v,
-        count: displayAttendeeCount(v, goingIds, filter),
+        count: displayAttendeeCount(v, goingIds, filter, crowd),
       }))
       .filter(({ v }) =>
         term.length === 0
@@ -62,7 +64,7 @@ export default function SearchCapsule({
       )
       .sort((a, b) => b.count - a.count);
     return list.slice(0, 6);
-  }, [venues, goingIds, filter, q]);
+  }, [venues, goingIds, filter, crowd, q]);
 
   return (
     <div className={`pointer-events-auto relative ${className}`}>

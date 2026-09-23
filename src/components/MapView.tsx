@@ -11,6 +11,7 @@ import { MAP_STYLES, type MapTheme, type Filter } from "@/components/map/types";
 import {
   attendeeCountNoun,
   displayAttendeeCount,
+  type CrowdQuery,
 } from "@/lib/venue-attendance";
 import {
   NightlifeHeatOverlay,
@@ -29,8 +30,11 @@ type Props = {
   theme: MapTheme;
   filter: Filter;
   showRadar: boolean;
+  crowd: CrowdQuery;
   /** Increment to request a recenter */
   recenterNonce: number;
+  /** When true, MapLibre pan is off so overlay controls can be dragged. */
+  lockPan?: boolean;
   pickMode?: boolean;
   pickLngLat?: { lng: number; lat: number } | null;
   onPick?: (lngLat: { lng: number; lat: number }) => void;
@@ -154,7 +158,9 @@ export default function MapView({
   theme,
   filter,
   showRadar,
+  crowd,
   recenterNonce,
+  lockPan = false,
   pickMode = false,
   pickLngLat = null,
   onPick,
@@ -181,6 +187,10 @@ export default function MapView({
   filterRef.current = filter;
   const showRadarRef = useRef(showRadar);
   showRadarRef.current = showRadar;
+  const crowdRef = useRef(crowd);
+  crowdRef.current = crowd;
+  const lockPanRef = useRef(lockPan);
+  lockPanRef.current = lockPan;
 
   // Init map once
   useEffect(() => {
@@ -205,6 +215,7 @@ export default function MapView({
     }
     map.touchZoomRotate.disableRotation();
     map.dragRotate.disable();
+    if (lockPanRef.current) map.dragPan.disable();
     map.on("error", (e) => {
       console.error("Map error", e.error ?? e);
     });
@@ -216,7 +227,8 @@ export default function MapView({
           venuesToHeatPoints(
             venuesRef.current,
             goingIdsRef.current,
-            filterRef.current
+            filterRef.current,
+            crowdRef.current
           )
         );
         overlay.setVisible(showRadarRef.current);
@@ -260,6 +272,13 @@ export default function MapView({
     map.setStyle(MAP_STYLES[theme]);
   }, [theme]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (lockPan) map.dragPan.disable();
+    else map.dragPan.enable();
+  }, [lockPan]);
+
   // Sync markers with visible venues + state
   useEffect(() => {
     const map = mapRef.current;
@@ -278,7 +297,7 @@ export default function MapView({
     let max = 0;
     const countNoun = attendeeCountNoun(filter);
     for (const v of venues) {
-      const c = displayAttendeeCount(v, goingIds, filter);
+      const c = displayAttendeeCount(v, goingIds, filter, crowd);
       if (c > max) {
         max = c;
         hottestId = v.id;
@@ -286,7 +305,7 @@ export default function MapView({
     }
 
     for (const v of venues) {
-      const count = displayAttendeeCount(v, goingIds, filter);
+      const count = displayAttendeeCount(v, goingIds, filter, crowd);
       const state = {
         count,
         countNoun,
@@ -329,13 +348,13 @@ export default function MapView({
         .addTo(map);
       markers.set(v.id, { marker, hit });
     }
-  }, [venues, selectedId, goingIds, showRadar, filter]);
+  }, [venues, selectedId, goingIds, showRadar, filter, crowd]);
 
   useEffect(() => {
     const overlay = heatOverlayRef.current;
-    overlay?.setPoints(venuesToHeatPoints(venues, goingIds, filter));
+    overlay?.setPoints(venuesToHeatPoints(venues, goingIds, filter, crowd));
     overlay?.setVisible(showRadar);
-  }, [venues, goingIds, filter, showRadar]);
+  }, [venues, goingIds, filter, showRadar, crowd]);
 
   useEffect(() => {
     const map = mapRef.current;
