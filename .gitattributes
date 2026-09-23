@@ -1,0 +1,3 @@
+# Keep line endings identical on macOS and Windows (Thies) so diffs stay clean
+# and agent/skill files parse the same everywhere.
+* text=auto eol=lf

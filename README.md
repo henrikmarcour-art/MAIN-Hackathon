@@ -165,11 +165,36 @@ git rebase main                      # or: git merge main
 
 ## Using this repo from Claude Code, Cursor, or VS Code
 
-No special setup — clone the repo (above) and open the `MAIN-Hackathon` folder directly in whichever tool you're using. It's a normal local Git repo, so each tool's own Git integration, terminal, and AI features work against the same `git pull` / `git push` flow described above.
+No special setup. Clone the repo (above) and open the `MAIN-Hackathon` folder in whichever tool you use. The whole AI setup is plain files in Git, with no symlinks, so a normal `git pull` gives Henrik, Thies and Leo the same setup on macOS and Windows.
 
-- **VS Code / Cursor**: `Terminal → Run Task… → "MaasNow: Start dev (npm run up)"` runs the dev server as a background task (defined in `.vscode/tasks.json`). Keep that terminal open while you work.
-- **Cursor**: `.cursor/settings.json` enables the Supabase and Vercel plugins for this project (used once the app grows a backend/deployment).
-- **Claude Code**: just open the folder — it reads `package.json` and the `scripts/` tooling the same way you would from a terminal.
+- **Project guide:** [`AGENTS.md`](AGENTS.md). Cursor, VS Code Copilot and Codex load it automatically, and Claude Code loads it through `CLAUDE.md`. Read it once yourself too.
+- **Workflows:** type one of these in your agent's chat:
+
+  | Command | What it does |
+  |---|---|
+  | `/start-work` | Check git status and pull the latest changes safely |
+  | `/new-feature <what>` | Branch, inspect, make a scoped change, verify |
+  | `/review-work` | Review your diff |
+  | `/pre-deploy` | GO / NO-GO check |
+  | `/end-work` | Clean up, commit, push your branch and write a handoff |
+
+- **Specialist agents** (Claude Code): in `.claude/agents/`: `frontend-designer`, `supabase-expert`, `code-reviewer`, `pre-deploy-checker`, `github-sync`.
+- **Docs:** [architecture](docs/ARCHITECTURE.md), [design system](docs/DESIGN_SYSTEM.md), [product UI direction](docs/PRODUCT_UI_DIRECTION.md).
+- **VS Code / Cursor:** `Terminal → Run Task… → "MaasNow: Start dev (npm run up)"` runs the dev server (defined in `.vscode/tasks.json`). Keep that terminal open while you work.
+- **Cursor:** `.cursor/settings.json` enables the Supabase and Vercel plugins for this project.
+
+### Supabase Agent Skills
+
+The official [Supabase Agent Skills](https://supabase.com/docs/guides/getting-started/ai-skills) (`supabase` and `supabase-postgres-best-practices`) are committed to this repo, so AI agents use them automatically for Supabase work. Nothing needs installing after cloning.
+
+- `.claude/skills/`: the skills plus our workflows. Claude Code, Cursor and VS Code Copilot all read this folder, so there is one copy with no duplicates.
+- `skills-lock.json`: records the source and version.
+
+To update them to the latest version, run this on a branch and commit the result:
+
+```bash
+npx skills add supabase/agent-skills --skill '*' --agent claude-code --copy -y
+```
 
 ## Next
 
