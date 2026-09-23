@@ -2,33 +2,55 @@
 
 See where Maastricht is going tonight. MaasNow is a mobile-first web app: a map of the city with social markers for bars, clubs and events, an "I'm going" interaction, and private invitations that unlock violet markers on the map.
 
-This build runs on local sample data. There is no backend and no auth yet.
+This build runs on local sample data. There is no backend and no auth yet, and **no secrets or `.env` file are needed to run it.**
+
+## First-time setup
+
+Each person works from their **own local clone** of this GitHub repo — not a shared folder, and not separate `Henrik/` `Thies/` `Leo/` subfolders inside the project. Clone it once per machine:
+
+```bash
+git clone https://github.com/henrikmarcour-art/MAIN-Hackathon.git
+cd MAIN-Hackathon
+npm install
+npm run up
+```
+
+Requires Node.js 18.18+ (Node 20 LTS or newer recommended). Wait until the terminal shows **`Ready`**, then open [http://localhost:3000](http://localhost:3000).
 
 ## Run locally
 
+**After every `git pull` or merge**, start (or restart) the app from the project folder:
+
 ```bash
 npm install
-npm run dev
+npm run up
 ```
 
-(`npm run dev` clears a broken `.next` automatically after a production build. Use `npm run dev:fast` only if you did **not** run `npm run build` since the last dev session.)
+Wait until the terminal shows **`Ready`**, then open [http://localhost:3000](http://localhost:3000).
 
-Open [http://localhost:3000](http://localhost:3000). **Leave the terminal running** — if you close it, Safari will show “Can’t connect to the server”.
+In **Cursor / VS Code**: `Terminal → Run Task… → MaasNow: Start dev (npm run up)` — keep that terminal open.
+
+**Leave that terminal open.** If you close it, the browser shows `ERR_CONNECTION_REFUSED` / “Can’t connect to the server” — nothing is wrong with the code; the dev server is simply off.
+
+| Command | When to use |
+|--------|-------------|
+| `npm run up` | **Default** — clean cache + start dev on port 3000 |
+| `npm run dev` | Start dev (auto-fixes bad `.next` when needed) |
+| `npm run doctor` | Diagnose connection refused |
+| `npm start` | **Not for daily dev** — production server after `npm run build` |
 
 The layout is designed for a phone (390 × 844) and also works at desktop width.
 
-### Safari / browser “Can’t connect to the server”
+### `ERR_CONNECTION_REFUSED` on http://localhost:3000
 
-The dev server is **not running**. In the project folder:
+Nothing is listening on port **3000** — start the dev server:
 
 ```bash
-npm install
-npm run dev
+npm run doctor   # optional: explains what’s wrong
+npm run up
 ```
 
-Wait until you see `Ready` and `http://localhost:3000`, then reload the browser. If port 3000 was stuck on an old process, `npm run dev` tries to free it; if that fails, run `npm run dev:clean`.
-
-Do **not** use `npm start` for everyday work — that is for production after `npm run build`.
+Keep the terminal open until you see `Ready`, then reload the browser.
 
 ### “Internal Server Error” on localhost:3000
 
@@ -100,20 +122,54 @@ Graphite text, warm off-white surfaces, lime accent. Orange marks a busy night. 
 | `feat/events`  | Leo    | `EventSheet.tsx`, `InviteCard.tsx`, `ForYouPanel.tsx`, `CreatePanel.tsx`, `src/data/events.ts` |
 | `feat/profile` | Thies  | `src/components/ProfilePanel.tsx`, `src/components/Avatar.tsx`       |
 
-Shared files, change them carefully:
+Shared files, change them carefully — pull first, keep the diff small, tell the others before editing:
 
 - `src/app/page.tsx` wires state and props together.
 - `src/data/events.ts` is the sample data everyone reads. Leo owns the content.
 - `src/components/BottomNav.tsx` and `TopBar.tsx` are shared chrome.
 
+## Everyday Git workflow
+
+Pull before you start, work on a branch, push, open a PR:
+
 ```bash
-git checkout feat/map          # or feat/events / feat/profile
-git pull origin main --rebase
-# edit, then:
-git add -A && git commit -m "..."
-git push -u origin feat/map
-# open a pull request into main
+git checkout main
+git pull origin main
+
+git checkout -b feat/your-change     # or: git checkout feat/map, etc.
+
+# ...edit files...
+
+git add -A
+git commit -m "Short description of what changed"
+git push -u origin feat/your-change
+# open a pull request into main on GitHub
 ```
+
+To pick up what the others merged since you last pulled:
+
+```bash
+git checkout main
+git pull origin main
+git checkout feat/your-change
+git rebase main                      # or: git merge main
+```
+
+**Avoiding conflicts:**
+
+- Pull `main` before you start a session, and again before you push.
+- Stick to your owned files from the table above where possible; for shared files, keep edits small and coordinate first.
+- Commit and push often in small chunks rather than one huge end-of-day commit — smaller diffs merge cleaner.
+- Never run `npm run build` while `npm run dev` is running (see troubleshooting above), and don't commit `.next/` or `node_modules/` — `.gitignore` already excludes both.
+- If a rebase or merge conflict comes up, resolve it locally before pushing; don't force-push over someone else's work.
+
+## Using this repo from Claude Code, Cursor, or VS Code
+
+No special setup — clone the repo (above) and open the `MAIN-Hackathon` folder directly in whichever tool you're using. It's a normal local Git repo, so each tool's own Git integration, terminal, and AI features work against the same `git pull` / `git push` flow described above.
+
+- **VS Code / Cursor**: `Terminal → Run Task… → "MaasNow: Start dev (npm run up)"` runs the dev server as a background task (defined in `.vscode/tasks.json`). Keep that terminal open while you work.
+- **Cursor**: `.cursor/settings.json` enables the Supabase and Vercel plugins for this project (used once the app grows a backend/deployment).
+- **Claude Code**: just open the folder — it reads `package.json` and the `scripts/` tooling the same way you would from a terminal.
 
 ## Next
 

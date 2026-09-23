@@ -26,6 +26,12 @@ import {
 } from "@/components/map/types";
 import { uniqueFriendsAcrossVenues } from "@/lib/venue-attendance";
 import { addHours, clockInMaastricht, formatClock, isHappeningAt, isUpcomingTonight } from "@/lib/night-time";
+import {
+  canDeleteEvent,
+  deleteEvent,
+  fetchCreatedEvents,
+  insertEvent,
+} from "@/lib/supabase-events";
 
 // MapLibre touches `window`; load it client-side only.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -59,6 +65,27 @@ export default function Home() {
   useEffect(() => {
     const id = window.setInterval(() => setClockTick(Date.now()), 30_000);
     return () => window.clearInterval(id);
+  }, []);
+
+  // Load user-created events from Supabase once on mount and merge them in.
+  // Keep any locally-created venue whose insert hasn't resolved to the
+  // server yet (or a duplicate slipping in) by de-duping on id.
+  useEffect(() => {
+    let cancelled = false;
+    fetchCreatedEvents().then((fetched) => {
+      if (cancelled || fetched.length === 0) return;
+      setCreatedVenues((prev) => {
+        const seen = new Set(prev.map((v) => v.id));
+        const merged = [...prev];
+        for (const venue of fetched) {
+          if (!seen.has(venue.id)) merged.push(venue);
+        }
+        return merged;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const catalog = useMemo(
@@ -216,6 +243,8 @@ export default function Home() {
   }, [openInvite]);
 
   const handleCreate = useCallback((venue: Venue) => {
+    // Optimistic: show it immediately, then persist so it survives a
+    // refresh and shows up for anyone else opening the app.
     setCreatedVenues((prev) => [...prev, venue]);
     setGoingIds((prev) => new Set(prev).add(venue.id));
     setMapPickActive(false);
@@ -226,6 +255,7 @@ export default function Home() {
       setSelectedId(venue.id);
       setFocusId(venue.id);
     }, 50);
+    void insertEvent(venue);
   }, []);
 
   /** Hosts can remove the events they created; seeded venues stay put. */
@@ -245,6 +275,7 @@ export default function Home() {
       next.delete(id);
       return next;
     });
+    void deleteEvent(id);
   }, []);
 
   const startMapPick = useCallback(() => {
@@ -335,7 +366,7 @@ export default function Home() {
           onToggleGoing={() => toggleGoing(selected.id)}
           onClose={() => setSelectedId(null)}
           onDelete={
-            createdVenues.some((v) => v.id === selected.id)
+            canDeleteEvent(selected.id)
               ? () => deleteVenue(selected.id)
               : undefined
           }

@@ -28,7 +28,7 @@ MaasNow dependencies are missing.
 
 From the project folder run:
   npm install
-  npm run dev
+  npm run up
 `);
   process.exit(1);
 }
@@ -67,9 +67,19 @@ function cleanNext(reason) {
   console.log(reason);
 }
 
-/** Stop leftover Next dev servers so Safari can use localhost:3000. */
+/** Stop leftover Next dev servers so browsers can use localhost:3000. */
 function freePort3000() {
-  if (process.platform === "win32") return;
+  if (process.platform === "win32") {
+    try {
+      execSync(`npx --yes kill-port ${PORT}`, {
+        stdio: "ignore",
+        shell: true,
+      });
+    } catch {
+      /* port already free */
+    }
+    return;
+  }
   try {
     const out = execSync(`lsof -ti :${PORT} 2>/dev/null || true`, {
       encoding: "utf8",
@@ -94,7 +104,14 @@ function freePort3000() {
     }
     sleep(400);
   } catch {
-    /* lsof unavailable */
+    try {
+      execSync(`npx --yes kill-port ${PORT}`, {
+        stdio: "ignore",
+        shell: true,
+      });
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -114,8 +131,23 @@ Keep this terminal open while you use the app in the browser.
 Press Ctrl+C to stop.
 `);
 
-const child = spawn(process.execPath, [nextBin, "dev", "-p", String(PORT)], {
-  stdio: "inherit",
-  cwd,
+const child = spawn(
+  process.execPath,
+  [nextBin, "dev", "-p", String(PORT)],
+  {
+    stdio: "inherit",
+    cwd,
+    env: process.env,
+  }
+);
+child.on("error", (err) => {
+  console.error("\nFailed to start Next.js dev server:", err.message);
+  console.error("Try: npm install && npm run up\n");
+  process.exit(1);
 });
-child.on("exit", (code) => process.exit(code ?? 0));
+child.on("exit", (code) => {
+  if (code && code !== 0) {
+    console.error(`\nDev server exited with code ${code}. Try: npm run up\n`);
+  }
+  process.exit(code ?? 0);
+});
