@@ -64,6 +64,9 @@ export default function TopBar({
           <DiscoveryChips filter={filter} onFilter={onFilter} />
         </div>
       </div>
+      <p className="px-3 pt-1 text-center text-[11px] font-medium text-graphite-muted md:px-6">
+        Test by Leo
+      </p>
     </div>
   );
 }
