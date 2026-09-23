@@ -39,7 +39,9 @@ function rowToVenue(row: EventRow): Venue {
     friendsGoing: row.friends_going ?? [],
     busy: row.busy,
     isPrivate: row.is_private,
-    hostId: row.host_id ?? undefined,
+    // Every client saves host_id "me", so without auth the delete token is the
+    // only proof this browser created the event.
+    hostId: canDeleteEvent(row.id) ? (row.host_id ?? undefined) : undefined,
     openJoin: row.open_join,
     invitedIds: row.invited_ids ?? [],
   };
