@@ -24,7 +24,12 @@ import {
   type MapTheme,
 } from "@/components/map/types";
 import { uniqueFriendsAcrossVenues } from "@/lib/venue-attendance";
-import { fetchCreatedEvents, insertEvent } from "@/lib/supabase-events";
+import {
+  canDeleteEvent,
+  deleteEvent,
+  fetchCreatedEvents,
+  insertEvent,
+} from "@/lib/supabase-events";
 
 // MapLibre touches `window`; load it client-side only.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -217,6 +222,7 @@ export default function Home() {
       next.delete(id);
       return next;
     });
+    void deleteEvent(id);
   }, []);
 
   const startMapPick = useCallback(() => {
@@ -315,7 +321,7 @@ export default function Home() {
           onToggleGoing={() => toggleGoing(selected.id)}
           onClose={() => setSelectedId(null)}
           onDelete={
-            createdVenues.some((v) => v.id === selected.id)
+            canDeleteEvent(selected.id)
               ? () => deleteVenue(selected.id)
               : undefined
           }
