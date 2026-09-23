@@ -5,18 +5,24 @@
 // or pull in different sort/ranking logic. Props stay the same shape.
 
 import { type Venue } from "@/data/events";
+import { displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 import { AvatarStack } from "./Avatar";
 
 type Props = {
   venues: Venue[];
   goingIds: Set<string>;
+  crowd: CrowdQuery;
   onOpenVenue: (id: string) => void;
 };
 
-export default function ForYouPanel({ venues, goingIds, onOpenVenue }: Props) {
+export default function ForYouPanel({ venues, goingIds, crowd, onOpenVenue }: Props) {
   const top = [...venues]
     .filter((v) => !v.isPrivate)
-    .sort((a, b) => b.goingCount - a.goingCount)
+    .sort(
+      (a, b) =>
+        displayAttendeeCount(b, goingIds, "all", crowd) -
+        displayAttendeeCount(a, goingIds, "all", crowd)
+    )
     .slice(0, 4);
 
   return (
@@ -51,7 +57,7 @@ export default function ForYouPanel({ venues, goingIds, onOpenVenue }: Props) {
                       v.busy ? "text-orange" : "text-graphite"
                     }`}
                   >
-                    {v.goingCount + (goingIds.has(v.id) ? 1 : 0)}
+                    {displayAttendeeCount(v, goingIds, "all", crowd)}
                   </span>
                 </div>
               </button>

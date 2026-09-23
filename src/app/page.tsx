@@ -24,7 +24,7 @@ import {
   type Filter,
   type MapTheme,
 } from "@/components/map/types";
-import { uniqueFriendsAcrossVenues } from "@/lib/venue-attendance";
+import { uniqueFriendsAcrossVenues, displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 import { addHours, clockInMaastricht, formatClock, isHappeningAt, isUpcomingTonight } from "@/lib/night-time";
 import {
   canDeleteEvent,
@@ -61,6 +61,7 @@ export default function Home() {
   const [timeOpen, setTimeOpen] = useState(false);
   const [hourOffset, setHourOffset] = useState(0);
   const [clockTick, setClockTick] = useState(() => Date.now());
+  const [panLocked, setPanLocked] = useState(false);
 
   useEffect(() => {
     const id = window.setInterval(() => setClockTick(Date.now()), 30_000);
@@ -143,21 +144,33 @@ export default function Home() {
     [filteredVenues, selectedId]
   );
 
-  const totalGoing = useMemo(
-    () =>
-      filteredVenues.reduce(
-        (sum, v) => sum + v.goingCount + (goingIds.has(v.id) ? 1 : 0),
-        0
-      ),
-    [filteredVenues, goingIds]
+  const onMap = tab === "map" && !mapPickActive;
+  const sliderOpen = Boolean(onMap && timeOpen && !selected);
+
+  useEffect(() => {
+    if (!sliderOpen) setPanLocked(false);
+  }, [sliderOpen]);
+  const evaluationTime = useMemo(
+    () => addHours(new Date(clockTick), timeOpen ? hourOffset : 0),
+    [clockTick, timeOpen, hourOffset]
+  );
+  const crowd: CrowdQuery = useMemo(
+    () => ({
+      mode: timeOpen ? "instantPresence" : "stillActiveOrComing",
+      at: evaluationTime,
+    }),
+    [timeOpen, evaluationTime]
   );
 
   const railHeadlineCount = useMemo(
     () =>
       filter === "friends"
         ? uniqueFriendsAcrossVenues(filteredVenues)
-        : totalGoing,
-    [filter, filteredVenues, totalGoing]
+        : filteredVenues.reduce(
+            (sum, v) => sum + displayAttendeeCount(v, goingIds, filter, crowd),
+            0
+          ),
+    [filter, filteredVenues, goingIds, crowd]
   );
 
   const pendingInvites = invitations.filter(
@@ -168,8 +181,6 @@ export default function Home() {
     ? catalog.find((v) => v.id === openInvite.venueId) ?? null
     : null;
 
-  const onMap = tab === "map" && !mapPickActive;
-  const sliderOpen = Boolean(onMap && timeOpen && !selected);
   const clockDisplay = useMemo(() => {
     const at = addHours(new Date(clockTick), sliderOpen ? hourOffset : 0);
     const { hour, minute } = clockInMaastricht(at);
@@ -312,6 +323,8 @@ export default function Home() {
         theme={theme}
         filter={filter}
         showRadar={showRadar}
+        crowd={crowd}
+        lockPan={panLocked}
         recenterNonce={recenterNonce}
         pickMode={mapPickActive}
         pickLngLat={mapPick}
@@ -324,6 +337,7 @@ export default function Home() {
           onFilter={handleFilter}
           venues={visibleVenues}
           goingIds={goingIds}
+          crowd={crowd}
           onPick={handleSelect}
         />
       )}
@@ -354,6 +368,7 @@ export default function Home() {
           venues={filteredVenues}
           goingIds={goingIds}
           filter={filter}
+          crowd={crowd}
           headlineCount={railHeadlineCount}
           onPick={handleSelect}
         />
@@ -363,6 +378,7 @@ export default function Home() {
         <EventSheet
           venue={selected}
           going={goingIds.has(selected.id)}
+          crowd={crowd}
           onToggleGoing={() => toggleGoing(selected.id)}
           onClose={() => setSelectedId(null)}
           onDelete={
@@ -377,6 +393,7 @@ export default function Home() {
         <ForYouPanel
           venues={visibleVenues}
           goingIds={goingIds}
+          crowd={crowd}
           onOpenVenue={handleSelect}
         />
       )}
@@ -420,11 +437,17 @@ export default function Home() {
       )}
 
       {sliderOpen && (
-        <div className="mn-time-slot">
+        <div
+          className="mn-time-slot"
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           <TimeClock time={clockDisplay} className="mn-dock-clock-over" />
           <TimeScrubber
             offsetHours={hourOffset}
             onOffsetHours={setHourOffset}
+            onScrubbingChange={setPanLocked}
           />
         </div>
       )}
@@ -453,6 +476,7 @@ export default function Home() {
         <InviteCard
           invitation={openInvite}
           venue={openInviteVenue}
+          crowd={crowd}
           onAccept={acceptInvite}
           onDecline={declineInvite}
           onClose={() => setOpenInviteId(null)}

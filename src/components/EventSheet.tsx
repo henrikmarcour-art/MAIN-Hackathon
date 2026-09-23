@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { categoryMeta, currentUser, people, type Venue } from "@/data/events";
 import { AvatarStack } from "./Avatar";
 import AttendeeListSheet from "./AttendeeListSheet";
-import { totalGoingCount } from "@/lib/venue-attendees";
+import { displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 
 type Props = {
   venue: Venue;
   going: boolean;
+  crowd: CrowdQuery;
   onToggleGoing: () => void;
   onClose: () => void;
   /** Only provided for events the current user hosts. */
@@ -22,6 +23,7 @@ function priceLabel(p: 1 | 2 | 3) {
 export default function EventSheet({
   venue,
   going,
+  crowd,
   onToggleGoing,
   onClose,
   onDelete,
@@ -35,7 +37,8 @@ export default function EventSheet({
     setShowAttendees(false);
   }, [venue.id]);
 
-  const allGoing = totalGoingCount(venue, going);
+  const goingIds = going ? new Set([venue.id]) : new Set<string>();
+  const allGoing = displayAttendeeCount(venue, goingIds, "all", crowd);
   const host =
     venue.hostId === currentUser.id
       ? currentUser
@@ -74,6 +77,7 @@ export default function EventSheet({
       <AttendeeListSheet
         venue={venue}
         userGoing={going}
+        crowd={crowd}
         onClose={() => setShowAttendees(false)}
       />
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Invitation, Venue } from "@/data/events";
+import { displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 import { Avatar, AvatarStack } from "./Avatar";
 
 type ChipProps = {
@@ -34,6 +35,7 @@ export function InviteChip({ invitation, venue, onOpen }: ChipProps) {
 type CardProps = {
   invitation: Invitation;
   venue: Venue;
+  crowd: CrowdQuery;
   onAccept: () => void;
   onDecline: () => void;
   onClose: () => void;
@@ -43,6 +45,7 @@ type CardProps = {
 export function InviteCard({
   invitation,
   venue,
+  crowd,
   onAccept,
   onDecline,
   onClose,
@@ -122,7 +125,7 @@ export function InviteCard({
             <AvatarStack people={venue.friendsGoing} size={26} />
             <p className="text-[13px] text-graphite-soft">
               <span className="font-semibold text-graphite">
-                {venue.goingCount} guests
+                {displayAttendeeCount(venue, new Set(), "all", crowd)} guests
               </span>{" "}
               already in · {venue.vibe}
             </p>

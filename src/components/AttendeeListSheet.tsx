@@ -12,11 +12,13 @@ import {
   isFriendAttendee,
   totalGoingCount,
 } from "@/lib/venue-attendees";
+import type { CrowdQuery } from "@/lib/venue-attendance";
 import { Avatar } from "./Avatar";
 
 type Props = {
   venue: Venue;
   userGoing: boolean;
+  crowd: CrowdQuery;
   onClose: () => void;
 };
 
@@ -41,6 +43,7 @@ function matchesSearch(p: Person, query: string): boolean {
 export default function AttendeeListSheet({
   venue,
   userGoing,
+  crowd,
   onClose,
 }: Props) {
   const [draft, setDraft] = useState("");
@@ -50,14 +53,14 @@ export default function AttendeeListSheet({
   const listRef = useRef<HTMLDivElement>(null);
 
   const attendees = useMemo(
-    () => buildAttendeeList(venue, userGoing),
-    [venue, userGoing]
+    () => buildAttendeeList(venue, userGoing, crowd),
+    [venue, userGoing, crowd]
   );
   const filteredAttendees = useMemo(
     () => attendees.filter((p) => matchesSearch(p, peopleQuery.trim())),
     [attendees, peopleQuery]
   );
-  const total = totalGoingCount(venue, userGoing);
+  const total = totalGoingCount(venue, userGoing, crowd);
   const trimmedQuery = peopleQuery.trim();
 
   useEffect(() => {

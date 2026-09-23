@@ -61,6 +61,24 @@ function parseHourMinute(token: string): ClockParts | null {
   return { hour, minute };
 }
 
+/**
+ * Map a venue's clock span onto real Dates around `at` (Maastricht night
+ * offset, so 23:00–05:00 stays one continuous evening).
+ */
+export function venueEventBounds(
+  venue: Venue,
+  at: Date
+): { start: Date; end: Date } | null {
+  const span = parseVenueSpan(venue.time);
+  if (!span) return null;
+  const now = clockInMaastricht(at);
+  const nowOff = toNightOffset(now.hour, now.minute);
+  return {
+    start: addHours(at, (span.start - nowOff) / 60),
+    end: addHours(at, (span.end - nowOff) / 60),
+  };
+}
+
 export function parseVenueSpan(time: string): Span | null {
   const raw = time.trim();
   if (!raw) return null;
