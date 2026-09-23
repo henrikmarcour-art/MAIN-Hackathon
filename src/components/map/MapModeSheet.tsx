@@ -115,17 +115,17 @@ export default function MapModeSheet({
           <div className="mx-5 mb-5 mt-4 flex items-center justify-between rounded-2xl bg-surface-2 px-4 py-3">
             <div>
               <div className="text-[13px] font-semibold text-graphite">
-                Social radar
+                Vibe-Map
               </div>
               <div className="text-[11px] text-graphite-muted">
-                Soft halos show how busy a place is
+                Blue is quiet · gold is packed
               </div>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={showRadar}
-              aria-label="Social radar"
+              aria-label="Vibe-Map"
               onClick={onToggleRadar}
               className={`mn-switch ${showRadar ? "is-on" : ""}`}
             >

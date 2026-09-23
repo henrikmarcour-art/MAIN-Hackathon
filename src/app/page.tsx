@@ -16,6 +16,7 @@ import CreatePanel, { type PickedLngLat } from "@/components/CreatePanel";
 import ProfilePanel from "@/components/ProfilePanel";
 import { InviteCard, InviteChip } from "@/components/InviteCard";
 import MapActions from "@/components/map/MapActions";
+import TimeScrubber, { TimeClock } from "@/components/map/TimeScrubber";
 import MapModeSheet from "@/components/map/MapModeSheet";
 import DiscoveryRail from "@/components/map/DiscoveryRail";
 import {
@@ -24,6 +25,7 @@ import {
   type MapTheme,
 } from "@/components/map/types";
 import { uniqueFriendsAcrossVenues } from "@/lib/venue-attendance";
+import { addHours, clockInMaastricht, formatClock, isHappeningAt, isUpcomingTonight } from "@/lib/night-time";
 import {
   canDeleteEvent,
   deleteEvent,
@@ -45,9 +47,6 @@ export default function Home() {
   const [acceptedVenueIds, setAcceptedVenueIds] = useState<Set<string>>(
     () => new Set()
   );
-  const [declinedInviteIds, setDeclinedInviteIds] = useState<Set<string>>(
-    () => new Set()
-  );
   const [openInviteId, setOpenInviteId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("map");
   const [createdVenues, setCreatedVenues] = useState<Venue[]>([]);
@@ -59,6 +58,14 @@ export default function Home() {
   const [showRadar, setShowRadar] = useState(true);
   const [modeOpen, setModeOpen] = useState(false);
   const [recenterNonce, setRecenterNonce] = useState(0);
+  const [timeOpen, setTimeOpen] = useState(false);
+  const [hourOffset, setHourOffset] = useState(0);
+  const [clockTick, setClockTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setClockTick(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Load user-created events from Supabase once on mount and merge them in.
   // Keep any locally-created venue whose insert hasn't resolved to the
@@ -86,29 +93,50 @@ export default function Home() {
     [createdVenues]
   );
 
-  // Private venues are only visible once their invitation is accepted,
-  // or if the current user is hosting them.
+  const invitedVenueIds = useMemo(
+    () => new Set(invitations.map((inv) => inv.venueId)),
+    []
+  );
+
+  // Private nights stay on the map if you host them or were invited —
+  // even before you accept, and after you decline.
   const visibleVenues = useMemo(
     () =>
       catalog.filter((v) =>
         v.isPrivate
-          ? acceptedVenueIds.has(v.id) || v.hostId === currentUser.id
+          ? v.hostId === currentUser.id || invitedVenueIds.has(v.id)
           : true
       ),
-    [acceptedVenueIds, catalog]
+    [catalog, invitedVenueIds]
+  );
+
+  const timedVenues = useMemo(
+    () =>
+      visibleVenues.filter((v) => {
+        const at = new Date(clockTick);
+        if (!timeOpen) return isUpcomingTonight(v, at);
+        return isHappeningAt(v, new Date(at.getTime() + hourOffset * 3600_000));
+      }),
+    [visibleVenues, timeOpen, hourOffset, clockTick]
   );
 
   const filteredVenues = useMemo(
     () =>
-      visibleVenues.filter((v) => {
+      timedVenues.filter((v) => {
         if (filter === "all") return true;
         if (filter === "friends") return v.friendsGoing.length > 0;
         if (filter === "trending")
           return v.goingCount + (goingIds.has(v.id) ? 1 : 0) >= TRENDING_MIN;
         return v.isPrivate || v.category === filter;
       }),
-    [visibleVenues, filter, goingIds]
+    [timedVenues, filter, goingIds]
   );
+
+  useEffect(() => {
+    if (selectedId && !filteredVenues.some((v) => v.id === selectedId)) {
+      setSelectedId(null);
+    }
+  }, [filteredVenues, selectedId]);
 
   const selected = useMemo(
     () => filteredVenues.find((v) => v.id === selectedId) ?? null,
@@ -117,11 +145,11 @@ export default function Home() {
 
   const totalGoing = useMemo(
     () =>
-      visibleVenues.reduce(
+      filteredVenues.reduce(
         (sum, v) => sum + v.goingCount + (goingIds.has(v.id) ? 1 : 0),
         0
       ),
-    [visibleVenues, goingIds]
+    [filteredVenues, goingIds]
   );
 
   const railHeadlineCount = useMemo(
@@ -133,8 +161,7 @@ export default function Home() {
   );
 
   const pendingInvites = invitations.filter(
-    (inv) =>
-      !acceptedVenueIds.has(inv.venueId) && !declinedInviteIds.has(inv.id)
+    (inv) => !acceptedVenueIds.has(inv.venueId)
   );
   const openInvite = invitations.find((i) => i.id === openInviteId) ?? null;
   const openInviteVenue = openInvite
@@ -142,6 +169,12 @@ export default function Home() {
     : null;
 
   const onMap = tab === "map" && !mapPickActive;
+  const sliderOpen = Boolean(onMap && timeOpen && !selected);
+  const clockDisplay = useMemo(() => {
+    const at = addHours(new Date(clockTick), sliderOpen ? hourOffset : 0);
+    const { hour, minute } = clockInMaastricht(at);
+    return formatClock(hour, minute);
+  }, [clockTick, sliderOpen, hourOffset]);
 
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id);
@@ -164,7 +197,15 @@ export default function Home() {
       else next.add(id);
       return next;
     });
-  }, []);
+    if (invitedVenueIds.has(id)) {
+      setAcceptedVenueIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }
+  }, [invitedVenueIds]);
 
   const acceptInvite = useCallback(() => {
     if (!openInvite) return;
@@ -185,7 +226,19 @@ export default function Home() {
 
   const declineInvite = useCallback(() => {
     if (!openInvite) return;
-    setDeclinedInviteIds((prev) => new Set(prev).add(openInvite.id));
+    const venueId = openInvite.venueId;
+    setAcceptedVenueIds((prev) => {
+      if (!prev.has(venueId)) return prev;
+      const next = new Set(prev);
+      next.delete(venueId);
+      return next;
+    });
+    setGoingIds((prev) => {
+      if (!prev.has(venueId)) return prev;
+      const next = new Set(prev);
+      next.delete(venueId);
+      return next;
+    });
     setOpenInviteId(null);
   }, [openInvite]);
 
@@ -230,6 +283,8 @@ export default function Home() {
     setMapPick(null);
     setMapPickActive(true);
     setModeOpen(false);
+    setTimeOpen(false);
+    setHourOffset(0);
   }, []);
 
   const cancelMapPick = useCallback(() => {
@@ -250,6 +305,8 @@ export default function Home() {
           if (mapPickActive) return;
           setSelectedId(null);
           setModeOpen(false);
+          setTimeOpen(false);
+          setHourOffset(0);
         }}
         focusId={focusId}
         theme={theme}
@@ -271,24 +328,12 @@ export default function Home() {
         />
       )}
 
-      {onMap && (
-        <MapActions
-          theme={theme}
-          showRadar={showRadar}
-          modeOpen={modeOpen}
-          onOpenMode={() => setModeOpen((o) => !o)}
-          onRecenter={() => setRecenterNonce((n) => n + 1)}
-          onToggleRadar={() => setShowRadar((r) => !r)}
-          className="absolute right-3 top-[calc(max(12px,env(safe-area-inset-top))+112px)] z-20 md:right-6 md:top-[76px]"
-        />
-      )}
-
       {tab === "profile" && (
         <div className="animate-fade pointer-events-none absolute inset-0 z-10 bg-graphite/20 backdrop-blur-[2px]" />
       )}
 
       {pendingInvites.length > 0 && onMap && (
-        <div className="pointer-events-none absolute inset-x-0 top-[calc(max(12px,env(safe-area-inset-top))+112px)] z-20 flex justify-center px-14 md:justify-start md:px-6 md:top-[76px]">
+        <div className="pointer-events-none absolute inset-x-0 top-[calc(max(12px,env(safe-area-inset-top))+112px)] z-20 flex flex-col items-center gap-2 px-14 md:items-start md:px-6 md:top-[76px]">
           {pendingInvites.map((inv) => {
             const venue = catalog.find((v) => v.id === inv.venueId);
             if (!venue) return null;
@@ -352,6 +397,36 @@ export default function Home() {
           goingIds={goingIds}
           onOpenVenue={handleSelect}
         />
+      )}
+
+      {onMap && !selected && (
+        <MapActions
+          theme={theme}
+          modeOpen={modeOpen}
+          timeOpen={timeOpen}
+          onOpenMode={() => {
+            setTimeOpen(false);
+            setHourOffset(0);
+            setModeOpen((o) => !o);
+          }}
+          onRecenter={() => setRecenterNonce((n) => n + 1)}
+          onToggleTime={() => {
+            setTimeOpen((open) => !open);
+            setHourOffset(0);
+            setModeOpen(false);
+          }}
+          className="absolute right-3 bottom-[calc(76px+env(safe-area-inset-bottom)+12px)] z-40 md:right-6 md:bottom-6"
+        />
+      )}
+
+      {sliderOpen && (
+        <div className="mn-time-slot">
+          <TimeClock time={clockDisplay} className="mn-dock-clock-over" />
+          <TimeScrubber
+            offsetHours={hourOffset}
+            onOffsetHours={setHourOffset}
+          />
+        </div>
       )}
 
       <BottomNav

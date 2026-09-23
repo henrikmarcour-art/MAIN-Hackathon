@@ -54,6 +54,15 @@ export function RadarIcon(p: IconProps) {
   );
 }
 
+export function ClockIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5.2l3.2 1.8" />
+    </svg>
+  );
+}
+
 export function SunIcon(p: IconProps) {
   return (
     <svg {...base(p)}>

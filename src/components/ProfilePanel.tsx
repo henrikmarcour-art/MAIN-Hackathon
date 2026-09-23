@@ -77,7 +77,6 @@ export default function ProfilePanel({
   onOpenVenue,
 }: Props) {
   const going = venues.filter((v) => goingIds.has(v.id));
-  const [ghost, setGhost] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 
   function comingSoon(label: string) {
@@ -239,46 +238,6 @@ export default function ProfilePanel({
               </svg>
             }
           />
-        </Group>
-
-        {/* privacy */}
-        <SectionLabel>Privacy</SectionLabel>
-        <Group>
-          <div className="flex w-full items-center gap-3 px-4 py-2.5 text-left">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-graphite text-white">
-              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M12 3c-3.9 0-7 3.1-7 7v9l2.5-2 2.25 2L12 18l2.25 2 2.25-2L19 20v-9c0-3.9-3.1-7-7-7z" />
-                <circle cx="9.5" cy="10.5" r="1" fill="currentColor" stroke="none" />
-                <circle cx="14.5" cy="10.5" r="1" fill="currentColor" stroke="none" />
-              </svg>
-            </span>
-            <span className="flex-1">
-              <span className="block text-[15px] font-medium tracking-tight text-graphite">
-                Ghost mode
-              </span>
-              <span className="block text-[12px] text-graphite-muted">
-                Go out without showing on the map
-              </span>
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={ghost}
-              aria-label="Ghost mode"
-              onClick={() => setGhost((g) => !g)}
-              className={[
-                "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors",
-                ghost ? "bg-lime-deep" : "bg-line",
-              ].join(" ")}
-            >
-              <span
-                className={[
-                  "absolute top-[3px] h-5 w-5 rounded-full bg-white shadow transition-all",
-                  ghost ? "left-[21px]" : "left-[3px]",
-                ].join(" ")}
-              />
-            </button>
-          </div>
         </Group>
 
         {/* app */}

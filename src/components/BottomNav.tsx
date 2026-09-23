@@ -5,6 +5,7 @@ export type Tab = "map" | "foryou" | "create" | "profile";
 type Props = {
   tab: Tab;
   onChange: (t: Tab) => void;
+  className?: string;
 };
 
 const items: { key: Tab; label: string; icon: React.ReactNode }[] = [
@@ -48,11 +49,11 @@ const items: { key: Tab; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-export default function BottomNav({ tab, onChange }: Props) {
+export default function BottomNav({ tab, onChange, className = "" }: Props) {
   return (
     <nav
       aria-label="Primary"
-      className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(10px,env(safe-area-inset-bottom))] md:bottom-6 md:pb-0"
+      className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(10px,env(safe-area-inset-bottom))] md:bottom-6 md:pb-0 ${className}`}
     >
       <div className="pointer-events-auto grid w-full max-w-[420px] grid-cols-4 rounded-2xl border border-line/70 bg-surface/85 p-1 shadow-float backdrop-blur-md">
         {items.map((it) => {

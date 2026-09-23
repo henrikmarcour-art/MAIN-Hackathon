@@ -12,6 +12,10 @@ import {
   attendeeCountNoun,
   displayAttendeeCount,
 } from "@/lib/venue-attendance";
+import {
+  NightlifeHeatOverlay,
+  venuesToHeatPoints,
+} from "@/lib/nightlife-heat";
 
 type Props = {
   venues: Venue[];
@@ -112,6 +116,11 @@ function applyMarkerState(
   el.classList.toggle("is-going", going);
   el.classList.toggle("is-hottest", hottest);
   el.classList.toggle("has-radar", showRadar);
+  el.classList.toggle("kind-bar", v.category === "bar");
+  el.classList.toggle("kind-club", v.category === "club");
+  el.classList.toggle("kind-event", v.category === "event");
+  el.classList.toggle("kind-food", v.category === "food");
+  el.classList.toggle("kind-private", v.category === "private");
 
   el.setAttribute("aria-label", `${v.name}, ${count} ${countNoun}`);
   el.setAttribute("aria-pressed", active ? "true" : "false");
@@ -163,6 +172,15 @@ export default function MapView({
   pickModeRef.current = pickMode;
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
+  const heatOverlayRef = useRef<NightlifeHeatOverlay | null>(null);
+  const venuesRef = useRef(venues);
+  venuesRef.current = venues;
+  const goingIdsRef = useRef(goingIds);
+  goingIdsRef.current = goingIds;
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+  const showRadarRef = useRef(showRadar);
+  showRadarRef.current = showRadar;
 
   // Init map once
   useEffect(() => {
@@ -190,6 +208,25 @@ export default function MapView({
     map.on("error", (e) => {
       console.error("Map error", e.error ?? e);
     });
+    const attachHeat = () => {
+      heatOverlayRef.current?.destroy();
+      try {
+        const overlay = new NightlifeHeatOverlay(map);
+        overlay.setPoints(
+          venuesToHeatPoints(
+            venuesRef.current,
+            goingIdsRef.current,
+            filterRef.current
+          )
+        );
+        overlay.setVisible(showRadarRef.current);
+        heatOverlayRef.current = overlay;
+      } catch (err) {
+        console.error("Heatmap overlay failed", err);
+      }
+    };
+    map.on("load", attachHeat);
+    map.on("style.load", attachHeat);
     map.on("click", (e) => {
       if (pickModeRef.current) {
         onPickRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat });
@@ -208,6 +245,8 @@ export default function MapView({
       }
       markers.forEach((entry) => entry.marker.remove());
       markers.clear();
+      heatOverlayRef.current?.destroy();
+      heatOverlayRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -291,6 +330,12 @@ export default function MapView({
       markers.set(v.id, { marker, hit });
     }
   }, [venues, selectedId, goingIds, showRadar, filter]);
+
+  useEffect(() => {
+    const overlay = heatOverlayRef.current;
+    overlay?.setPoints(venuesToHeatPoints(venues, goingIds, filter));
+    overlay?.setVisible(showRadar);
+  }, [venues, goingIds, filter, showRadar]);
 
   useEffect(() => {
     const map = mapRef.current;

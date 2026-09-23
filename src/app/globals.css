@@ -40,7 +40,8 @@ body {
 
 /* Keep the required basemap attribution visible above the bottom nav */
 .maplibregl-ctrl-bottom-right {
-  bottom: calc(72px + env(safe-area-inset-bottom));
+  bottom: calc(148px + env(safe-area-inset-bottom));
+  right: 8px;
 }
 @media (min-width: 768px) {
   .maplibregl-ctrl-bottom-right {
@@ -155,6 +156,151 @@ body {
   border-color: rgba(37, 99, 235, 0.35);
 }
 
+/* Time slot: empty space from the Profile tab to the side icons */
+.mn-time-slot {
+  position: absolute;
+  z-index: 35;
+  left: max(12px, calc(50% + min(210px, (100vw - 24px) / 2) + 10px));
+  right: 58px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 6px;
+  pointer-events: none;
+  min-width: 0;
+}
+.mn-time-slot > * {
+  pointer-events: auto;
+}
+.mn-dock-clock-over,
+.mn-dock-clock-corner {
+  align-self: flex-end;
+}
+.mn-time-clock {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 7px;
+  color: var(--color-graphite);
+  line-height: 0.9;
+  white-space: nowrap;
+  filter: drop-shadow(0 1px 1px rgba(250, 248, 244, 0.95))
+    drop-shadow(0 6px 14px rgba(250, 248, 244, 0.75));
+}
+.mn-time-clock-value {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+}
+.mn-time-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  align-self: center;
+  background: var(--color-lime-deep, #9ed10e);
+  box-shadow: 0 0 0 4px rgba(158, 209, 14, 0.22);
+}
+.mn-time-scrubber {
+  width: 100%;
+  padding: 8px 14px 10px;
+  border-radius: 22px;
+  background: rgba(250, 248, 244, 0.94);
+  border: 1px solid rgba(230, 226, 217, 0.9);
+  box-shadow: var(--shadow-control);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.mn-time-readout {
+  position: relative;
+  height: 16px;
+  margin-bottom: 4px;
+}
+.mn-time-offset {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--color-graphite);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.mn-time-track {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mn-time-ticks {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  padding: 0 9px;
+}
+.mn-time-tick {
+  width: 1px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--color-graphite-muted);
+  opacity: 0.35;
+}
+.mn-time-tick:first-child,
+.mn-time-tick:last-child {
+  height: 8px;
+  opacity: 0.5;
+}
+.mn-time-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--color-line);
+  outline: none;
+  margin: 0;
+}
+.mn-time-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-graphite);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 6px rgba(28, 28, 30, 0.28);
+  cursor: pointer;
+}
+.mn-time-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-graphite);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 6px rgba(28, 28, 30, 0.28);
+  cursor: pointer;
+}
+@media (min-width: 768px) {
+  .mn-time-slot {
+    left: max(24px, calc(50% + 210px + 14px));
+    right: 76px;
+    bottom: 24px;
+  }
+  .mn-time-clock-value {
+    font-size: 52px;
+  }
+}
+@media (max-width: 767px) {
+  .mn-time-slot {
+    left: 50%;
+    right: 58px;
+    bottom: calc(76px + env(safe-area-inset-bottom) + 8px);
+  }
+}
+
 /* Switch */
 .mn-switch {
   position: relative;
@@ -243,6 +389,20 @@ body {
   color: rgba(250, 248, 244, 0.9);
 }
 
+.mn-heat-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: multiply;
+  transition: opacity 220ms ease;
+}
+.mn-map.theme-night .mn-heat-canvas {
+  mix-blend-mode: screen;
+}
+
 /* ------------------------------------------------------------------ */
 /* Social markers                                                      */
 /* MapLibre transforms .mn-marker-anchor (0×0). Never size/style that   */
@@ -289,6 +449,26 @@ body {
 }
 .mn-marker.is-private {
   --pin: var(--color-violet);
+}
+.mn-marker.kind-bar {
+  --pin: var(--color-cobalt);
+  --pin-ink: #fff;
+}
+.mn-marker.kind-club {
+  --pin: var(--color-orange);
+  --pin-ink: #fff;
+}
+.mn-marker.kind-event {
+  --pin: var(--color-lime);
+  --pin-ink: var(--color-graphite);
+}
+.mn-marker.kind-food {
+  --pin: #0f766e;
+  --pin-ink: #fff;
+}
+.mn-marker.kind-private {
+  --pin: var(--color-violet);
+  --pin-ink: #fff;
 }
 .mn-marker .stack,
 .mn-marker .badge,
