@@ -53,7 +53,7 @@ How MaasNow is built and deployed today (Phase 1: no auth). Keep this file in sy
 - **Style choice** is remembered per browser via `src/lib/preferences.ts`.
 - **Heatmap: disabled.** `src/lib/nightlife-heat.ts` is kept but no longer mounted. To bring it back, recreate the overlay in `MapView` and restore the switch in `MapModeSheet`.
 
-## Personalization groundwork (not visible yet)
+## Personalization groundwork
 
 - **`src/lib/preferences.ts`:** a versioned, sanitised `localStorage` object (`maasnow:prefs:v1`) holding:
   - interests, saved, hidden and "not my vibe" places,
@@ -63,7 +63,8 @@ How MaasNow is built and deployed today (Phase 1: no auth). Keep this file in sy
   Today only the map style and "open" counts are written. After auth, upload it once to a Supabase profile and read from there.
 - **`src/lib/relevance.ts`:** a pure, explainable score per venue plus reasons and a "why" line. It combines time of night, interests, habits, distance, friends and trending.
   - Some places are "pinned" (always visible): yours, going, saved, private invites, user-created events, and places with 2+ friends.
-  - **Nothing uses it for visibility yet.** Before a visible cap: tune the friends threshold, because the demo data gives most venues 2+ friends.
+  - **Used for pin prominence only** (`src/lib/map/pin-tier.ts`): the score ranks which pins are drawn large; every place still shows, at least as a dot. Nothing is hidden based on it. Social pins are capped separately because the demo data gives most venues 2+ friends.
+- **Pin layout** (`placePins` in `MapView.tsx`): after every `moveend`, prominent pins are chosen in rank order up to a zoom-based cap, and a pin that would overlap a stronger one becomes a dot. See DESIGN_SYSTEM §10.
 ## Data flow
 
 **Page load**

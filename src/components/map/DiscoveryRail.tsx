@@ -59,10 +59,10 @@ export default function DiscoveryRail({
           <span className="mx-auto mb-2 h-1 w-9 rounded-full bg-line md:hidden" />
           <span className="flex items-center justify-between pb-2 md:pt-1.5">
             <span>
-              <span className="block text-[15px] font-bold tracking-tight text-graphite">
+              <span className="block text-body font-semibold tracking-tight text-graphite">
                 Popular tonight
               </span>
-              <span className="block text-[12px] text-graphite-muted">
+              <span className="block text-meta text-graphite-muted">
                 <span className="font-semibold tabular-nums text-graphite-soft">
                   {headlineCount.toLocaleString("en-US")}
                 </span>{" "}
@@ -84,51 +84,42 @@ export default function DiscoveryRail({
         {expanded && (
           <div className="no-scrollbar flex snap-x gap-2.5 overflow-x-auto px-3 pb-3 pt-1">
             {popular.length === 0 && (
-              <p className="px-1 pb-1 text-[13px] text-graphite-muted">
+              <p className="px-1 pb-1 text-meta text-graphite-muted">
                 Nothing in this lens yet. Try another filter.
               </p>
             )}
-            {popular.map(({ v, count }, i) => (
+            {popular.map(({ v, count }) => (
               <button
                 key={v.id}
                 type="button"
                 onClick={() => onPick(v.id)}
                 className="mn-card group w-[212px] shrink-0 snap-start text-left"
               >
-                <span className="flex items-center justify-between">
-                  <span
-                    className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider ${
-                      v.isPrivate ? "text-violet" : "text-cobalt"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        v.isPrivate ? "bg-violet" : "bg-cobalt"
-                      }`}
-                    />
-                    {categoryLabel(v)}
-                  </span>
-                  {i === 0 && (
-                    <span className="rounded-full bg-graphite px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-lime">
-                      Hottest
-                    </span>
+                <span
+                  className={`flex items-center gap-1.5 text-caption uppercase ${
+                    v.isPrivate ? "text-violet" : "text-graphite-soft"
+                  }`}
+                >
+                  {v.isPrivate && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-violet" />
                   )}
+                  {categoryLabel(v)}
                 </span>
-                <span className="mt-1.5 block truncate text-[15px] font-bold leading-tight tracking-tight text-graphite">
+                <span className="mt-1.5 block truncate text-body font-semibold leading-tight tracking-tight text-graphite">
                   {v.name}
                 </span>
-                <span className="mt-0.5 block truncate text-[12px] text-graphite-muted">
+                <span className="mt-0.5 block truncate text-meta text-graphite-muted">
                   {v.time}
                 </span>
                 <span className="mt-2.5 flex items-center justify-between">
                   {v.friendsGoing.length > 0 ? (
                     <AvatarStack people={v.friendsGoing.slice(0, 3)} size={22} />
                   ) : (
-                    <span className="text-[12px] text-graphite-muted">
+                    <span className="text-meta text-graphite-muted">
                       {v.vibe.split(" · ")[0]}
                     </span>
                   )}
-                  <span className="text-[13px] font-bold tabular-nums tracking-tight text-graphite">
+                  <span className="text-meta font-semibold tabular-nums tracking-tight text-graphite">
                     {count}
                     <span className="ml-1 font-medium text-graphite-muted">
                       {countNoun}

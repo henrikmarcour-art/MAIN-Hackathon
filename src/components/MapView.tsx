@@ -3,8 +3,10 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import {
+  invitations,
   MAASTRICHT_CENTER,
   MAASTRICHT_CENTER_MOBILE,
+  type Category,
   type Venue,
 } from "@/data/events";
 import type { Filter } from "@/components/map/types";
@@ -16,6 +18,13 @@ import {
   type MapStyleId,
 } from "@/lib/map/styles";
 import { metersPerPixel } from "@/lib/map/geo";
+import {
+  planPins,
+  prominentCap,
+  type PinCandidate,
+  type PinTier,
+} from "@/lib/map/pin-tier";
+import { loadPreferences } from "@/lib/preferences";
 import type { UserPosition } from "@/lib/use-user-location";
 
 /** Ask the map to move; a new `nonce` repeats the same request. */
@@ -49,8 +58,6 @@ type Props = {
   onPick?: (lngLat: { lng: number; lat: number }) => void;
 };
 
-const MIN_SIZE = 34;
-const MAX_SIZE = 60;
 type VenueMarker = { marker: maplibregl.Marker; hit: HTMLButtonElement };
 
 function createMarkerAnchor(hit: HTMLButtonElement) {
@@ -60,20 +67,31 @@ function createMarkerAnchor(hit: HTMLButtonElement) {
   return anchor;
 }
 
-const REF_MIN = Math.sqrt(10);
-const REF_MAX = Math.sqrt(220);
+/** Visible pin radius per tier, for the on-screen overlap check. */
+const PIN_RADIUS: Record<Exclude<PinTier, "quiet">, number> = {
+  relevant: 15,
+  social: 17,
+};
+/** Minimum gap between two prominent pins before the weaker one becomes a dot. */
+const PIN_GAP = 6;
 
-/** Square-root attendance scaling, clamped so large events never dominate. */
-function markerSize(count: number) {
-  const t = (Math.sqrt(Math.max(count, 1)) - REF_MIN) / (REF_MAX - REF_MIN);
-  const clamped = Math.min(1, Math.max(0, t));
-  return Math.round(MIN_SIZE + clamped * (MAX_SIZE - MIN_SIZE));
-}
+const svg = (paths: string) =>
+  `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 
-function haloSize(size: number) {
-  const t = (size - MIN_SIZE) / (MAX_SIZE - MIN_SIZE);
-  return Math.round(size + 18 + t * 44);
-}
+/** Category is an icon, never a color (DESIGN_SYSTEM §2). */
+const CATEGORY_ICON: Record<Category, string> = {
+  bar: svg('<path d="M5 4h14l-7 8z"/><path d="M12 12v7"/><path d="M8 20h8"/>'),
+  club: svg(
+    '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'
+  ),
+  event: svg(
+    '<path d="M12 4l2.2 4.8 5.3.6-3.9 3.6 1.1 5.2L12 15.6l-4.7 2.6 1.1-5.2-3.9-3.6 5.3-.6z"/>'
+  ),
+  food: svg(
+    '<path d="M7 3v18"/><path d="M4.5 3v5a2.5 2.5 0 0 0 5 0V3"/><path d="M17 21V3c-2 1.5-3 4-3 7h3"/>'
+  ),
+  private: svg('<path d="M4 11l8-6 8 6v9H4z"/><path d="M10 20v-5h4v5"/>'),
+};
 
 const LOCK_SVG =
   '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
@@ -84,67 +102,109 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-function renderMarkerInner(
-  v: Venue,
-  count: number,
-  going: boolean,
-  countNoun: "going" | "friends"
-) {
-  const friends = v.friendsGoing.slice(0, 2);
-  const body =
-    friends.length > 0
-      ? `<span class="avatars">${friends
-          .map(
-            (p) =>
-              `<span style="background:${p.color}">${escapeHtml(p.initials)}</span>`
-          )
-          .join("")}</span>`
-      : `<span class="count">${count}</span>`;
-  const badge = friends.length > 0 ? `<span class="badge">${count}</span>` : "";
+type MarkerState = {
+  tier: PinTier;
+  count: number;
+  countNoun: "going" | "friends";
+  active: boolean;
+  going: boolean;
+  hot: boolean;
+};
+
+function renderMarkerInner(v: Venue, s: MarkerState) {
+  let body = "";
+  if (s.tier === "social" && !s.active) {
+    body = `<span class="avatars">${v.friendsGoing
+      .slice(0, 2)
+      .map(
+        (p) =>
+          `<span style="background:${p.color}">${escapeHtml(p.initials)}</span>`
+      )
+      .join("")}</span>`;
+  } else if (s.tier !== "quiet" || s.active) {
+    body = CATEGORY_ICON[v.category];
+  }
   const lock = v.isPrivate ? `<span class="lock">${LOCK_SVG}</span>` : "";
-  const goingDot = going ? `<span class="going">${CHECK_SVG}</span>` : "";
-  const label = `<span class="label"><b>${escapeHtml(v.name)}</b><span>${count} ${countNoun}</span></span>`;
-  return `<span class="halo"></span><span class="stack"><span class="pin">${body}</span>${badge}${lock}${goingDot}</span>${label}`;
+  const goingDot = s.going ? `<span class="going">${CHECK_SVG}</span>` : "";
+  const label = `<span class="label"><b>${escapeHtml(v.name)}</b><span>${s.count} ${s.countNoun}</span></span>`;
+  return `<span class="halo"></span><span class="stack"><span class="pin">${body}</span>${lock}${goingDot}</span>${label}`;
 }
 
-function applyMarkerState(
-  el: HTMLElement,
-  v: Venue,
-  opts: {
-    count: number;
-    countNoun: "going" | "friends";
-    active: boolean;
-    going: boolean;
-    hottest: boolean;
-  }
-) {
-  const { count, countNoun, active, going, hottest } = opts;
-  const size = markerSize(count);
+const Z_INDEX: Record<PinTier, number> = { quiet: 1, relevant: 2, social: 3 };
 
+function applyMarkerState(el: HTMLElement, v: Venue, s: MarkerState) {
   // Never assign el.className — MapLibre adds maplibregl-marker + anchor classes.
   el.classList.add("mn-marker");
+  el.classList.toggle("tier-quiet", s.tier === "quiet" && !s.active);
+  el.classList.toggle("tier-relevant", s.tier === "relevant");
+  el.classList.toggle("tier-social", s.tier === "social");
   el.classList.toggle("is-private", !!v.isPrivate);
-  el.classList.toggle("is-active", active);
-  el.classList.toggle("is-going", going);
-  el.classList.toggle("is-hottest", hottest);
-  el.classList.toggle("kind-bar", v.category === "bar");
-  el.classList.toggle("kind-club", v.category === "club");
-  el.classList.toggle("kind-event", v.category === "event");
-  el.classList.toggle("kind-food", v.category === "food");
-  el.classList.toggle("kind-private", v.category === "private");
+  el.classList.toggle("is-active", s.active);
+  el.classList.toggle("is-going", s.going);
+  el.classList.toggle("is-hot", s.hot);
 
-  el.setAttribute("aria-label", `${v.name}, ${count} ${countNoun}`);
-  el.setAttribute("aria-pressed", active ? "true" : "false");
-  el.style.setProperty("--size", `${size}px`);
-  el.style.setProperty("--halo", `${haloSize(size)}px`);
-  el.style.zIndex = active ? "10" : hottest ? "3" : "1";
+  el.setAttribute("aria-label", `${v.name}, ${s.count} ${s.countNoun}`);
+  el.setAttribute("aria-pressed", s.active ? "true" : "false");
+  el.style.zIndex = s.active ? "10" : s.hot ? "4" : String(Z_INDEX[s.tier]);
 
   // Only rebuild inner DOM when its content actually changes so CSS transitions survive.
-  const sig = `${count}|${countNoun}|${going ? 1 : 0}`;
+  const sig = `${s.tier}|${s.active ? 1 : 0}|${s.count}|${s.countNoun}|${s.going ? 1 : 0}`;
   if (el.dataset.sig !== sig) {
     el.dataset.sig = sig;
-    el.innerHTML = renderMarkerInner(v, count, going, countNoun);
+    el.innerHTML = renderMarkerInner(v, s);
   }
+}
+
+const INVITED_IDS: ReadonlySet<string> = new Set(
+  invitations.map((inv) => inv.venueId)
+);
+
+/**
+ * Decide which pins stay prominent for the current camera: the selected and
+ * personal pins always do; the rest go in rank order until the zoom's cap is
+ * reached, and a pin that would overlap a stronger one falls back to a dot.
+ * Off-screen pins stay quiet until the next move brings them into view.
+ */
+function placePins(
+  map: maplibregl.Map,
+  plan: PinCandidate[],
+  byId: ReadonlyMap<string, Venue>,
+  selectedId: string | null
+) {
+  const tiers = new Map<string, PinTier>();
+  const cap = prominentCap(map.getZoom());
+  const { clientWidth: w, clientHeight: h } = map.getContainer();
+  const placed: { x: number; y: number; r: number }[] = [];
+  let used = 0;
+  const order = [...plan].sort(
+    (a, b) =>
+      Number(b.id === selectedId) - Number(a.id === selectedId) ||
+      a.rank - b.rank
+  );
+  for (const c of order) {
+    const v = byId.get(c.id);
+    if (!v) continue;
+    const selected = c.id === selectedId;
+    const must = selected || c.personal;
+    const p = map.project([v.lng, v.lat]);
+    const onScreen = p.x >= -40 && p.y >= -40 && p.x <= w + 40 && p.y <= h + 40;
+    if (!onScreen || (!must && used >= cap)) {
+      tiers.set(c.id, "quiet");
+      continue;
+    }
+    const r = selected ? 20 : PIN_RADIUS[c.tier];
+    const clash = placed.some(
+      (q) => Math.hypot(q.x - p.x, q.y - p.y) < q.r + r + PIN_GAP
+    );
+    if (clash && !must) {
+      tiers.set(c.id, "quiet");
+      continue;
+    }
+    placed.push({ x: p.x, y: p.y, r });
+    tiers.set(c.id, c.tier);
+    if (!must) used++;
+  }
+  return tiers;
 }
 
 function isMobileViewport() {
@@ -211,6 +271,8 @@ export default function MapView({
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const lockPanRef = useRef(lockPan);
   lockPanRef.current = lockPan;
+  /** Re-places pins for the current camera; replaced whenever the data changes. */
+  const layoutRef = useRef<() => void>(() => {});
 
   // Init map once
   useEffect(() => {
@@ -247,6 +309,7 @@ export default function MapView({
     });
     // Only real drags fire this, not our own easeTo/flyTo animations.
     map.on("dragstart", () => onUserPanRef.current?.());
+    map.on("moveend", () => layoutRef.current());
     map.on("zoom", () => {
       const pos = userPositionRef.current;
       const el = userMarkerRef.current?.getElement();
@@ -302,7 +365,8 @@ export default function MapView({
     else map.dragPan.enable();
   }, [lockPan]);
 
-  // Sync markers with visible venues + state
+  // Rank venues whenever the data changes; which pins stay prominent also
+  // depends on the camera, so the layout re-runs after every map move.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -316,29 +380,25 @@ export default function MapView({
       }
     }
 
-    let hottestId: string | null = null;
-    let max = 0;
+    const byId = new Map(venues.map((v) => [v.id, v]));
+    const counts = new Map(
+      venues.map((v) => [v.id, displayAttendeeCount(v, goingIds, filter, crowd)])
+    );
     const countNoun = attendeeCountNoun(filter);
-    for (const v of venues) {
-      const c = displayAttendeeCount(v, goingIds, filter, crowd);
-      if (c > max) {
-        max = c;
-        hottestId = v.id;
-      }
-    }
+    const plan = planPins({
+      venues,
+      counts,
+      filter,
+      goingIds,
+      invitedIds: INVITED_IDS,
+      prefs: loadPreferences(),
+      at: crowd.at,
+      userPosition,
+    });
 
     for (const v of venues) {
-      const count = displayAttendeeCount(v, goingIds, filter, crowd);
-      const state = {
-        count,
-        countNoun,
-        active: v.id === selectedId,
-        going: goingIds.has(v.id),
-        hottest: v.id === hottestId,
-      };
       const existing = markers.get(v.id);
       if (existing) {
-        applyMarkerState(existing.hit, v, state);
         existing.marker.setLngLat([v.lng, v.lat]);
         const anchorEl = existing.marker.getElement();
         anchorEl.dataset.lng = String(v.lng);
@@ -347,7 +407,6 @@ export default function MapView({
       }
       const hit = document.createElement("button");
       hit.type = "button";
-      applyMarkerState(hit, v, state);
       hit.addEventListener("click", (e) => {
         e.stopPropagation();
         if (pickModeRef.current) {
@@ -370,7 +429,27 @@ export default function MapView({
         .addTo(map);
       markers.set(v.id, { marker, hit });
     }
-  }, [venues, selectedId, goingIds, filter, crowd]);
+
+    const layout = () => {
+      const tiers = placePins(map, plan, byId, selectedId);
+      for (const c of plan) {
+        const v = byId.get(c.id);
+        const entry = markers.get(c.id);
+        if (!v || !entry) continue;
+        const tier = tiers.get(c.id) ?? "quiet";
+        applyMarkerState(entry.hit, v, {
+          tier,
+          count: counts.get(c.id) ?? 0,
+          countNoun,
+          active: c.id === selectedId,
+          going: goingIds.has(c.id),
+          hot: c.hot && tier !== "quiet",
+        });
+      }
+    };
+    layoutRef.current = layout;
+    layout();
+  }, [venues, selectedId, goingIds, filter, crowd, userPosition]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -473,7 +552,7 @@ export default function MapView({
       ref={containerRef}
       className={`absolute inset-0 mn-map style-${mapStyle} ${
         isDarkMapStyle(mapStyle) ? "is-dark" : ""
-      }`}
+      } ${selectedId ? "has-selection" : ""}`}
       style={{ position: "absolute", inset: 0 }}
     />
   );

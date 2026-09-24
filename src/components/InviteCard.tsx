@@ -16,14 +16,14 @@ export function InviteChip({ invitation, venue, onOpen }: ChipProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="animate-fade pointer-events-auto flex w-[min(100%,320px)] shrink-0 items-center gap-3 rounded-full border border-violet/30 bg-surface/95 py-1.5 pl-1.5 pr-4 text-left shadow-float backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      className="animate-fade pointer-events-auto flex w-[min(100%,320px)] shrink-0 items-center gap-3 rounded-full border border-line bg-surface/95 py-1.5 pl-1.5 pr-4 text-left shadow-float backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
     >
       <Avatar person={invitation.from} size={30} />
       <span className="leading-tight">
-        <span className="block text-[13px] font-semibold tracking-tight text-graphite">
+        <span className="block text-meta font-semibold tracking-tight text-graphite">
           {invitation.from.name} invited you
         </span>
-        <span className="block text-[12px] text-violet">
+        <span className="block text-meta text-graphite-soft">
           {venue.name} · {venue.time}
         </span>
       </span>

@@ -14,8 +14,30 @@
   --color-violet: #6f56ff;
   --color-cobalt: #2563eb;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
-    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Type scale (DESIGN_SYSTEM §3). Use text-title etc., not text-[NNpx]. */
+  --text-display: 28px;
+  --text-display--line-height: 32px;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-title--letter-spacing: -0.015em;
+  --text-title--font-weight: 600;
+  --text-headline: 17px;
+  --text-headline--line-height: 22px;
+  --text-headline--letter-spacing: -0.01em;
+  --text-headline--font-weight: 600;
+  --text-body: 15px;
+  --text-body--line-height: 20px;
+  --text-meta: 13px;
+  --text-meta--line-height: 18px;
+  --text-caption: 11px;
+  --text-caption--line-height: 14px;
+  --text-caption--letter-spacing: 0.06em;
+  --text-caption--font-weight: 600;
 
   --shadow-float: 0 1px 2px rgba(28, 28, 30, 0.06), 0 8px 24px rgba(28, 28, 30, 0.1);
   --shadow-control: 0 1px 2px rgba(28, 28, 30, 0.05), 0 4px 14px rgba(28, 28, 30, 0.08);
@@ -241,7 +263,7 @@ body {
 }
 .mn-time-clock-value {
   font-size: 44px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.06em;
 }
 .mn-time-live-dot {
@@ -273,7 +295,7 @@ body {
   top: 0;
   transform: translateX(-50%);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.04em;
   color: var(--color-graphite);
   line-height: 1;
@@ -494,7 +516,9 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
-/* Social markers                                                      */
+/* Map pins (DESIGN_SYSTEM §10): quiet dots, a capped few prominent    */
+/* pins, one selected. Category = icon, state = ring/badge, never a    */
+/* category color.                                                     */
 /* MapLibre transforms .mn-marker-anchor (0×0). Never size/style that   */
 /* element — only the inner .mn-marker holds visible UI.               */
 /* ------------------------------------------------------------------ */
@@ -507,9 +531,8 @@ body {
   will-change: transform;
 }
 .mn-marker {
-  --pin: var(--color-cobalt);
-  --pin-ink: #fff;
-  --marker-slot: 60px;
+  --size: 30px;
+  --marker-slot: 44px;
   position: absolute;
   left: 0;
   top: 0;
@@ -524,192 +547,181 @@ body {
   box-sizing: border-box;
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
+  transition: opacity 200ms ease-out;
 }
+.mn-marker.tier-quiet {
+  --size: 10px;
+  --marker-slot: 24px;
+}
+.mn-marker.tier-social {
+  --size: 34px;
+}
+.mn-marker.tier-relevant.is-hot {
+  --size: 34px;
+}
+.mn-marker.tier-social.is-hot {
+  --size: 38px;
+}
+/* Selected always wins over the tier and hot sizes. */
+.mn-marker.is-active,
+.mn-marker.is-active.is-hot {
+  --size: 40px;
+}
+
+/* Selecting one pin quiets the rest. */
+.mn-map.has-selection .mn-marker:not(.is-active) {
+  opacity: 0.45;
+}
+
 .mn-marker .stack {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: var(--size, 40px);
-  height: var(--size, 40px);
+  width: var(--size);
+  height: var(--size);
   transform: translate(-50%, -50%);
   pointer-events: none;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .mn-marker .stack > * {
   pointer-events: auto;
 }
-.mn-marker.is-private {
-  --pin: var(--color-violet);
-}
-.mn-marker.kind-bar {
-  --pin: var(--color-cobalt);
-  --pin-ink: #fff;
-}
-.mn-marker.kind-club {
-  --pin: var(--color-orange);
-  --pin-ink: #fff;
-}
-.mn-marker.kind-event {
-  --pin: var(--color-lime);
-  --pin-ink: var(--color-graphite);
-}
-.mn-marker.kind-food {
-  --pin: #0f766e;
-  --pin-ink: #fff;
-}
-.mn-marker.kind-private {
-  --pin: var(--color-violet);
-  --pin-ink: #fff;
-}
-.mn-marker .stack,
-.mn-marker .badge,
-.mn-marker .lock,
-.mn-marker .going {
-  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms ease;
-}
-.mn-marker .pin {
-  transition: box-shadow 160ms ease;
-}
 
-/* Pin body */
+/* Pin body: relevant = surface + graphite category icon */
 .mn-marker .pin {
   position: absolute;
   inset: 0;
-  transform: none;
   border-radius: 9999px;
-  background: var(--pin);
-  color: var(--pin-ink);
-  /* white inner border + restrained shadow */
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.95),
-    0 1px 2px rgba(28, 28, 30, 0.14),
-    0 6px 14px rgba(28, 28, 30, 0.16);
+  background: var(--color-surface);
+  color: var(--color-graphite);
+  box-shadow: 0 0 0 1px rgba(28, 28, 30, 0.08), var(--shadow-control);
   display: grid;
   place-items: center;
   overflow: hidden;
 }
-.mn-marker .pin .count {
-  font-size: clamp(12px, calc(var(--size) * 0.32), 16px);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
+
+/* Quiet: a small graphite dot */
+.mn-marker.tier-quiet .pin {
+  background: var(--color-graphite);
+  box-shadow: 0 0 0 2px var(--color-surface), 0 1px 3px rgba(28, 28, 30, 0.22);
+}
+.mn-map.is-dark .mn-marker.tier-quiet .pin {
+  background: var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-graphite), 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Social: friends' avatars inside a thin graphite ring */
+.mn-marker.tier-social .pin {
+  box-shadow: 0 0 0 1.5px var(--color-graphite), var(--shadow-control);
 }
 .mn-marker .pin .avatars {
   display: flex;
 }
 .mn-marker .pin .avatars span {
-  width: calc(var(--size) * 0.42);
-  height: calc(var(--size) * 0.42);
+  width: calc(var(--size) * 0.5);
+  height: calc(var(--size) * 0.5);
   border-radius: 9999px;
   display: grid;
   place-items: center;
-  font-size: calc(var(--size) * 0.2);
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   color: #fff;
-  box-shadow: 0 0 0 1.5px var(--pin);
-  margin-left: calc(var(--size) * -0.12);
+  box-shadow: 0 0 0 1.5px var(--color-surface);
+  margin-left: calc(var(--size) * -0.1);
 }
 .mn-marker .pin .avatars span:first-child {
   margin-left: 0;
 }
 
-/* Count badge when avatars occupy the pin */
-.mn-marker .badge {
-  position: absolute;
-  right: -4px;
-  top: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 9999px;
-  background: var(--color-surface);
-  color: var(--color-graphite);
-  font-size: 11px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 0 0 1.5px var(--pin), 0 1px 2px rgba(28, 28, 30, 0.12);
-  font-variant-numeric: tabular-nums;
-  z-index: 2;
+/* You're going / your event: the only lime on the map */
+.mn-marker.is-going .pin {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-lime-deep),
+    var(--shadow-control);
 }
 
-/* Private lock */
-.mn-marker .lock {
-  position: absolute;
-  left: -3px;
-  bottom: -3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 9999px;
-  background: var(--color-violet);
-  box-shadow: 0 0 0 2px var(--color-surface);
-  display: grid;
-  place-items: center;
-  z-index: 2;
+/* Selected: graphite fill, white icon, label */
+.mn-marker.is-active .pin {
+  background: var(--color-graphite);
+  color: var(--color-surface);
+  box-shadow: 0 0 0 3px var(--color-surface), 0 8px 20px rgba(28, 28, 30, 0.24);
+}
+.mn-marker.is-active.is-going .pin {
+  box-shadow: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--color-lime-deep),
+    0 8px 20px rgba(28, 28, 30, 0.24);
 }
 
-/* Confirmed going — lime only */
+/* Private: a small violet lock, nothing louder */
+.mn-marker .lock,
 .mn-marker .going {
   position: absolute;
-  right: -3px;
   bottom: -3px;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 9999px;
-  background: var(--color-lime);
   box-shadow: 0 0 0 2px var(--color-surface);
   display: grid;
   place-items: center;
   z-index: 2;
 }
+.mn-marker .lock {
+  left: -3px;
+  background: var(--color-violet);
+}
+.mn-marker .going {
+  right: -3px;
+  background: var(--color-lime);
+}
+.mn-marker.tier-quiet .lock,
+.mn-marker.tier-quiet .going {
+  display: none;
+}
 
-/* Single soft halo — density, not sonar */
+/* Hot: at most one pin, a soft breathing halo */
 .mn-marker .halo {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: var(--halo, 72px);
-  height: var(--halo, 72px);
+  width: calc(var(--size) + 26px);
+  height: calc(var(--size) + 26px);
   border-radius: 9999px;
-  background: var(--pin);
+  background: var(--color-graphite);
   opacity: 0;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  transition: opacity 220ms ease;
 }
-.mn-marker.has-radar .halo {
-  opacity: 0.11;
+.mn-map.is-dark .mn-marker .halo {
+  background: var(--color-surface);
 }
-.mn-marker.has-radar.is-hottest .halo {
+.mn-marker.is-hot .halo {
   animation: mn-halo-breathe 4.8s ease-in-out infinite;
 }
 @keyframes mn-halo-breathe {
   0%,
   100% {
-    transform: translate(-50%, -50%) scale(0.94);
-    opacity: 0.09;
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0.06;
   }
   50% {
     transform: translate(-50%, -50%) scale(1.06);
-    opacity: 0.15;
+    opacity: 0.12;
   }
 }
 
-/* Floating label: shown when selected (all) or hovered (pointer devices) */
+/* Name label: shown when selected, or on hover with a pointer */
 .mn-marker .label {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 9px);
+  bottom: calc(50% + var(--size) / 2 + 8px);
   transform: translate(-50%, 4px);
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px 6px 11px;
+  padding: 6px 10px;
   border-radius: 9999px;
   background: var(--color-graphite);
   color: var(--color-surface);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
-  letter-spacing: -0.01em;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -717,22 +729,11 @@ body {
   transition: opacity 140ms ease, transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .mn-marker .label b {
-  font-weight: 700;
+  font-weight: 600;
 }
 .mn-marker .label span {
   color: rgba(250, 248, 244, 0.7);
   font-variant-numeric: tabular-nums;
-}
-.mn-marker .label::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 8px;
-  height: 8px;
-  background: var(--color-graphite);
-  transform: translateX(-50%) rotate(45deg);
-  border-radius: 1px;
 }
 .mn-marker.is-going .label span {
   color: var(--color-lime);
@@ -741,37 +742,23 @@ body {
 @media (hover: hover) {
   .mn-marker:hover {
     z-index: 6 !important;
+    opacity: 1 !important;
   }
   .mn-marker:hover .stack {
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: translate(-50%, -50%) scale(1.08);
   }
   .mn-marker:hover .label {
     opacity: 1;
     transform: translate(-50%, 0);
   }
 }
-
-/* Selected: raised layer, crisp lime outline, visible label — no big size jump */
-.mn-marker.is-active .stack {
-  transform: translate(-50%, -50%) scale(1.04);
-}
-.mn-marker.is-active .pin {
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 0 2.5px var(--color-surface),
-    0 0 0 5px var(--color-lime),
-    0 8px 20px rgba(28, 28, 30, 0.22);
-}
 .mn-marker.is-active .label {
   opacity: 1;
   transform: translate(-50%, 0);
 }
-.mn-marker.is-active .halo {
-  opacity: 0.16;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .mn-marker.has-radar.is-hottest .halo,
+  .mn-marker.is-hot .halo,
   .mn-user-dot::after,
   .mn-action.is-locating svg,
   .animate-sheet,
@@ -781,13 +768,9 @@ body {
   .mn-user-accuracy {
     transition: none;
   }
+  .mn-marker,
   .mn-marker .stack,
-  .mn-marker .pin,
-  .mn-marker .badge,
-  .mn-marker .lock,
-  .mn-marker .going,
   .mn-marker .label,
-  .mn-marker .halo,
   .mn-chip,
   .mn-action,
   .mn-card,

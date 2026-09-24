@@ -25,7 +25,7 @@ The bottom nav keeps 4 tabs: **Map · For You · Create · Profile**. Create sta
 ```
 ┌────────────────────────────────────────┐
 │ ◉ MaasNow            🔍 Search Maastricht│  ← brand pill + search capsule
-│ (All)(Bars)(Clubs)(Events)(Friends)(🔥) │  ← one row of chips, scrolls sideways
+│ (Tonight)(Friends)(Trending)(Type ▾)    │  ← three lenses + a type menu
 │                                         │
 │        ·   (Ⓒ148)                  [◎]  │  ← busy pin with count; recenter
 │    (●)          ·      (TM)        [≡]  │  ← friends pin (avatars); layers
@@ -42,7 +42,8 @@ The bottom nav keeps 4 tabs: **Map · For You · Create · Profile**. Create sta
 └────────────────────────────────────────┘
 ```
 
-- Filters are chips with one active state: a `graphite` fill for the selected chip. Everything else is neutral.
+- **Lens control:** Tonight · Friends · Trending, plus a **Type ▾** menu for Bars, Clubs, Events and Food. "Tonight" is the `all` filter: it already means everything open now or starting later tonight (or open at the time chosen on the slider), so the label describes what you see. Picking a type turns the Type chip on and shows its name; picking it again goes back to Tonight.
+- Chips have one active state: a `graphite` fill for the selected chip. Everything else is neutral.
 - Emoji in these wireframes (🔍 🔥 🔒 💬 📍) only stand in for line icons. The real UI uses icons from `icons.tsx`, never emoji.
 - The time slider always shows the chosen time. A "Back to now" pill appears when it is not live.
 - The heat layer is on by default but subtle. Its on/off switch lives in the layers menu (`MapModeSheet`) next to the light/night theme.
@@ -170,6 +171,17 @@ The bottom nav keeps 4 tabs: **Map · For You · Create · Profile**. Create sta
 
 ---
 
+## Desktop layout (next: `feat/desktop-side-panel`)
+
+Desktop is designed first; mobile gets a deliberately reduced version later.
+
+- **A large map plus one docked left panel** (about 380 px, full height, collapsible), instead of many floating elements.
+  - Panel header: wordmark, search, and For You / Create / Profile (replacing the bottom tab bar on desktop).
+  - Default state "Tonight": pending invites as one row, the lens control, Popular tonight as a vertical list.
+  - Venue state: the selected venue replaces the list (back arrow, Escape closes).
+- Floating over the map: only Locate, Layers and a bottom-center time pill that expands into the slider.
+- Mobile later: **one primary layer at a time** (map, venue sheet, or discovery feed), never all at once.
+
 ## What this needs beyond UI (later phases)
 
 | Idea | Needs |
@@ -189,5 +201,5 @@ Until then the UI can show these areas using the local data we have, clearly mar
 2. The preview card on pin tap, then the detail sheet order.
 3. The For You sections, which follow the time slider.
 4. The 3-step Create flow.
-5. The map pin redesign (DESIGN_SYSTEM §10).
+5. ~~The map pin redesign (DESIGN_SYSTEM §10).~~ Done in `feat/map-visual-system`, together with Geist, the type tokens and the lens control.
 6. The data-backed features above, after auth.

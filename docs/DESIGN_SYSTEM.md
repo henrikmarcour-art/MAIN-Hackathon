@@ -38,7 +38,7 @@ Tokens live in `src/app/globals.css` (`@theme`). A value that is not in this doc
 
 ### Rules
 
-- **One meaning per color.** Orange always means busy, violet private, cobalt friends and lime "you/primary". Category (bar, club, event, food) is shown with an **icon and label, not a color**. The map pins break this today; see §10.
+- **One meaning per color.** Orange always means busy, violet private, cobalt friends and lime "you/primary". Category (bar, club, event, food) is shown with an **icon and label, not a color**, on pins too (§10).
 - **Lime is a fill, never text on light.** Lime and lime-deep on `surface` have a contrast of about 1.2–1.7:1, which is unreadable. Use graphite text on a lime fill (≈13:1), or lime text on graphite (≈13:1, as in "You're hosting").
 - **Orange is a fill or icon color,** with graphite content on it (6.5:1). Orange text on light fails contrast.
 - **Contrast floor is WCAG AA.**
@@ -52,7 +52,7 @@ Tokens live in `src/app/globals.css` (`@theme`). A value that is not in this doc
 
 ## 3. Typography
 
-System font stack: SF Pro on Apple devices, Segoe UI on Windows (`--font-sans`). It's fast, native and needs no font loading. Weights: **500, 600 and 700 only** (400 for long body text).
+**Geist**, loaded with `next/font/google` in `src/app/layout.tsx` (self-hosted at build time, no npm package) and exposed as `--font-geist` → `--font-sans`, with the system stack as fallback. Weights: **500, 600 and 700 only** (400 for long body text). 700 is for `display` only; titles and names use 600.
 
 | Style | Size / line height | Weight | Tracking | Use |
 |---|---|---|---|---|
@@ -64,8 +64,9 @@ System font stack: SF Pro on Apple devices, Segoe UI on Windows (`--font-sans`).
 | `caption` | 11 / 14 | 600, UPPERCASE | +0.06em | Eyebrows, badges, tab labels |
 
 - Numbers (times, counts, prices) always use `tabular-nums`.
-- **Today the app uses 12 font sizes (10–30 px).** Map them onto the scale: 10→11, 12→13, 14→15, 18→17, 24→22, 30→28.
-- When the redesign starts, add these as Tailwind v4 theme tokens (`--text-display` …) so components use `text-title` instead of `text-[22px]`.
+- The scale is defined as Tailwind v4 tokens in `@theme` (`--text-display` … `--text-caption`, with line height, tracking and weight). Use `text-title`, `text-meta` etc., never `text-[22px]`. `text-caption` still needs `uppercase`.
+- **Done:** the map screen (top bar, search, lens control, Popular tonight, venue sheet, invite chip, map style sheet, notices).
+- **Still to move:** For You, Create, Profile, attendee list and the invitation card use arbitrary sizes. Map them when you touch them: 10→11, 12→13, 14→15, 18→17, 24→22, 30→28.
 
 ---
 
@@ -180,28 +181,43 @@ This is the same anatomy in a horizontal floating card (`lg` radius, `shadow-flo
 - **Scrim:** only in the full state, `graphite` at 20% opacity. No scrim while peeking.
 - **The primary action is pinned to the bottom** with safe-area padding. Content scrolls under it with a `line` divider.
 - **Only one sheet at a time.** Opening a second one (e.g. the attendee list) replaces or stacks it as a full-screen push; sheets don't pile up.
-- **Desktop (≥ 768 px):** the sheet becomes a 400 px side panel on the right, with the same content.
+- **Desktop (≥ 768 px):** today the sheet is a 400 px floating card at the bottom right. **Decided direction (next feature, `feat/desktop-side-panel`):** one docked **left** panel (about 380 px, full height) that holds search, invites, Popular tonight and the selected venue, with the map as the only thing to its right. See `docs/PRODUCT_UI_DIRECTION.md`.
 
 ---
 
 ## 10. Map pins
 
-**Target system** (today's pins color by category; move to this in the redesign):
+The map is the product, so pins are quiet by default. Most places are small dots; a ranked, capped few are prominent. Ranking decides **prominence only**: nothing is hidden. Logic: `src/lib/map/pin-tier.ts` (ranking) and `placePins` in `MapView.tsx` (caps and overlap); styles: `.mn-marker` in `globals.css`.
 
-| State | Look |
+| Tier | Look | Who gets it |
+|---|---|---|
+| **Quiet** | 10 px `graphite` dot, `surface` outline (inverted on dark maps). No count, no avatar, no color | Everything else that is on tonight |
+| **Relevant** | 30 px `surface` circle, `graphite` category icon, `shadow-control` | Highest-ranked places, up to the zoom cap |
+| **Social** | 34 px `surface` circle, up to 2 friend avatars, 1.5 px `graphite` ring | 2+ friends going; **max 3** (6 in the Friends lens), ranked by friends then relevance |
+| **Selected** | 40 px `graphite` fill, `surface` icon, name + count label. All other pins dim to 45% | The pin you tapped |
+
+**State overlays** (on any prominent tier):
+
+| State | Signal |
 |---|---|
-| Default | `surface` circle, `graphite` category icon, `shadow-control`, 36 px |
-| Busy / trending | Default + `orange` ring and count badge; the **only** pin with a looping halo |
-| Friends going | Up to 2 avatars inside the pin + a `cobalt` ring |
-| Private (visible to you) | `violet` fill, white lock icon |
-| You're going | `lime` fill, `graphite` icon |
-| Selected | Scale 1.15 + a 3 px `graphite` ring + a name label below; others dim to 60% |
-| Not open at the selected time | 40% opacity, no badge |
-| Cluster | `graphite` circle with a white count; tap zooms in |
+| You're going / your event | `lime-deep` ring + small `lime` check badge. **The only lime on the map** |
+| Private (visible to you) | Small `violet` lock badge |
+| Hot | **One pin at most** (busiest, and only if ≥ the trending threshold): +4 px and a soft breathing halo in `graphite` (`surface` on dark maps). The only looping animation on the map |
 
-- **Pin size** scales with crowd (36–48 px), never more.
-- **Labels** only for the selected pin and at high zoom.
-- **Counts** use `tabular-nums` and at most 3 characters ("99+").
+**Ranking and caps**
+
+- Rank order: personal first (yours, going, invited), then by the active lens: relevance score (`relevance.ts`) for Tonight and types, crowd for Trending, friends for Friends.
+- Personal and selected pins are always prominent. The rest fill the cap in rank order: **6** prominent pins below zoom 14, **10** below 15, **16** below 16, **24** above.
+- A prominent pin that would overlap a stronger one on screen (radii + 6 px) falls back to a dot. Off-screen pins count as dots until the map stops moving; tiers are recomputed on every `moveend`.
+- No clustering yet. With a few dozen places, caps and overlap fallback are enough.
+
+**Rules**
+
+- **Category = icon, state = ring or badge.** Never color a pin by category.
+- Don't add new state colors to pins. Busy/trending is shown by the single hot pin, not orange.
+- **Labels** only for the selected pin and on hover (pointer devices).
+- **Counts** live in the label, never as a badge on the pin; `tabular-nums`.
+- Demo data gives most places friends. Keep social capped so the map stays calm with it.
 
 ---
 

@@ -24,7 +24,8 @@ A mobile-first web app that shows where Maastricht is going tonight: a map of ba
 | `src/lib/night-time.ts` | Night clock (18:00–05:00) and time slider logic. |
 | `src/lib/map/styles.ts` | The three base maps (Standard, Night, Satellite), all derived from one style with provider POIs removed. |
 | `src/lib/use-user-location.ts` | The visitor's location (asked for on tap only, never stored). |
-| `src/lib/preferences.ts`, `src/lib/relevance.ts` | Per-browser preferences (`localStorage`) and venue relevance scoring. Groundwork: nothing is hidden based on it yet. |
+| `src/lib/preferences.ts`, `src/lib/relevance.ts` | Per-browser preferences (`localStorage`) and venue relevance scoring. Relevance ranks which map pins are prominent; nothing is hidden based on it. |
+| `src/lib/map/pin-tier.ts` | Pin hierarchy: ranks venues into quiet / relevant / social pins and the zoom caps (DESIGN_SYSTEM §10). |
 | `src/lib/nightlife-heat.ts` | Heat-map overlay. **Disabled**; kept for a possible return. |
 | `src/lib/venue-attendance.ts`, `venue-attendees.ts`, `event-chat.ts` | Local-only social data (crowd counts, attendee lists, chat). |
 | `scripts/` | Dev-server helpers (port cleanup, `doctor`) and the map-style builder. |
