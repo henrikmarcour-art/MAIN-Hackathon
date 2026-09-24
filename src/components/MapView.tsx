@@ -365,6 +365,18 @@ export default function MapView({
     else map.dragPan.enable();
   }, [lockPan]);
 
+  // State classes on the map container (see the className note below).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    for (const cls of [...el.classList]) {
+      if (cls.startsWith("style-")) el.classList.remove(cls);
+    }
+    el.classList.add(`style-${mapStyle}`);
+    el.classList.toggle("is-dark", isDarkMapStyle(mapStyle));
+    el.classList.toggle("has-selection", selectedId !== null);
+  }, [mapStyle, selectedId]);
+
   // Rank venues whenever the data changes; which pins stay prominent also
   // depends on the camera, so the layout re-runs after every map move.
   useEffect(() => {
@@ -385,16 +397,7 @@ export default function MapView({
       venues.map((v) => [v.id, displayAttendeeCount(v, goingIds, filter, crowd)])
     );
     const countNoun = attendeeCountNoun(filter);
-    const plan = planPins({
-      venues,
-      counts,
-      filter,
-      goingIds,
-      invitedIds: INVITED_IDS,
-      prefs: loadPreferences(),
-      at: crowd.at,
-      userPosition,
-    });
+    const prefs = loadPreferences();
 
     for (const v of venues) {
       const existing = markers.get(v.id);
@@ -430,7 +433,19 @@ export default function MapView({
       markers.set(v.id, { marker, hit });
     }
 
+    // GPS updates every few seconds, so the position is read from a ref when
+    // pins are laid out (data changes and every map move), not on each fix.
     const layout = () => {
+      const plan = planPins({
+        venues,
+        counts,
+        filter,
+        goingIds,
+        invitedIds: INVITED_IDS,
+        prefs,
+        at: crowd.at,
+        userPosition: userPositionRef.current,
+      });
       const tiers = placePins(map, plan, byId, selectedId);
       for (const c of plan) {
         const v = byId.get(c.id);
@@ -449,7 +464,7 @@ export default function MapView({
     };
     layoutRef.current = layout;
     layout();
-  }, [venues, selectedId, goingIds, filter, crowd, userPosition]);
+  }, [venues, selectedId, goingIds, filter, crowd]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -550,9 +565,10 @@ export default function MapView({
   return (
     <div
       ref={containerRef}
-      className={`absolute inset-0 mn-map style-${mapStyle} ${
-        isDarkMapStyle(mapStyle) ? "is-dark" : ""
-      } ${selectedId ? "has-selection" : ""}`}
+      // Fixed on purpose: MapLibre adds its own classes (maplibregl-map) to this
+      // element, and a changing className would make React wipe them. State
+      // classes are toggled in an effect instead.
+      className="absolute inset-0 mn-map"
       style={{ position: "absolute", inset: 0 }}
     />
   );

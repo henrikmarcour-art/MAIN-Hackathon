@@ -27,7 +27,7 @@ export default function MapNotice({ notice, onDismiss }: Props) {
       {notice && (
         <p
           key={notice.id}
-          className="animate-fade max-w-[340px] rounded-2xl bg-graphite px-4 py-3 text-center text-body font-medium leading-snug text-surface shadow-float"
+          className="animate-fade max-w-[340px] rounded-2xl bg-graphite px-4 py-3 text-center text-body font-medium text-surface shadow-float"
         >
           {notice.message}
         </p>

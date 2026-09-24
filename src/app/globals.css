@@ -532,7 +532,9 @@ body {
 }
 .mn-marker {
   --size: 30px;
+  /* Tap target stays 44 px for every tier, even the 10 px dots. */
   --marker-slot: 44px;
+  font-family: var(--font-sans);
   position: absolute;
   left: 0;
   top: 0;
@@ -551,7 +553,6 @@ body {
 }
 .mn-marker.tier-quiet {
   --size: 10px;
-  --marker-slot: 24px;
 }
 .mn-marker.tier-social {
   --size: 34px;

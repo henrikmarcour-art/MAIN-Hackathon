@@ -59,7 +59,7 @@ export default function DiscoveryRail({
           <span className="mx-auto mb-2 h-1 w-9 rounded-full bg-line md:hidden" />
           <span className="flex items-center justify-between pb-2 md:pt-1.5">
             <span>
-              <span className="block text-body font-semibold tracking-tight text-graphite">
+              <span className="block text-body font-semibold text-graphite">
                 Popular tonight
               </span>
               <span className="block text-meta text-graphite-muted">
@@ -105,7 +105,7 @@ export default function DiscoveryRail({
                   )}
                   {categoryLabel(v)}
                 </span>
-                <span className="mt-1.5 block truncate text-body font-semibold leading-tight tracking-tight text-graphite">
+                <span className="mt-1.5 block truncate text-body font-semibold text-graphite">
                   {v.name}
                 </span>
                 <span className="mt-0.5 block truncate text-meta text-graphite-muted">
@@ -119,7 +119,7 @@ export default function DiscoveryRail({
                       {v.vibe.split(" · ")[0]}
                     </span>
                   )}
-                  <span className="text-meta font-semibold tabular-nums tracking-tight text-graphite">
+                  <span className="text-meta font-semibold tabular-nums text-graphite">
                     {count}
                     <span className="ml-1 font-medium text-graphite-muted">
                       {countNoun}

@@ -4,7 +4,7 @@ export default function BrandPill({ compact = false }: { compact?: boolean }) {
   return (
     <div className="mn-control pointer-events-auto flex h-10 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-full px-3.5">
       <span className="mn-live-dot" aria-label="Live" />
-      <span className="text-body font-semibold tracking-tight text-graphite">
+      <span className="text-body font-semibold text-graphite">
         MaasNow
       </span>
       {!compact && (

@@ -78,7 +78,7 @@ export default function SearchCapsule({
             <SearchIcon size={15} strokeWidth={2.4} />
           </span>
           <span className="min-w-0 flex-1 leading-tight">
-            <span className="block truncate text-body font-semibold tracking-tight text-graphite">
+            <span className="block truncate text-body font-semibold text-graphite">
               Where to tonight?
             </span>
             <span className="mt-0.5 flex items-center gap-1.5 text-meta text-graphite-muted">
@@ -102,7 +102,7 @@ export default function SearchCapsule({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search places, vibes, streets"
-              className="min-w-0 flex-1 bg-transparent text-body font-medium tracking-tight text-graphite outline-none placeholder:text-graphite-muted"
+              className="min-w-0 flex-1 bg-transparent text-body font-medium text-graphite outline-none placeholder:text-graphite-muted"
               aria-label="Search places"
             />
             <button
@@ -115,7 +115,7 @@ export default function SearchCapsule({
             </button>
           </div>
           <div className="border-t border-line/80">
-            <div className="px-4 pb-1 pt-3 text-caption font-semibold uppercase tracking-wider text-graphite-muted">
+            <div className="px-4 pb-1 pt-3 text-caption uppercase text-graphite-muted">
               {q.trim() ? "Results" : "Popular now"}
             </div>
             {results.length === 0 ? (
@@ -138,7 +138,7 @@ export default function SearchCapsule({
                         <span className="h-2 w-2 shrink-0 rounded-full bg-violet" />
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-body font-semibold tracking-tight text-graphite">
+                        <span className="block truncate text-body font-semibold text-graphite">
                           {v.name}
                         </span>
                         <span className="block truncate text-meta text-graphite-muted">

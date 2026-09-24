@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { categoryMeta } from "@/data/events";
 import type { Filter } from "./types";
 import { ChevronIcon, TrendIcon, UsersIcon } from "./icons";
@@ -36,6 +36,8 @@ export default function DiscoveryChips({
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionsId = useId();
   const activeType = (types as Filter[]).includes(filter)
     ? (filter as TypeFilter)
     : null;
@@ -46,7 +48,9 @@ export default function DiscoveryChips({
       if (!rootRef.current?.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      triggerRef.current?.focus();
     };
     window.addEventListener("pointerdown", onDown);
     window.addEventListener("keydown", onKey);
@@ -63,31 +67,30 @@ export default function DiscoveryChips({
 
   return (
     <div ref={rootRef} className={`pointer-events-auto relative ${className}`}>
-      <div
-        role="tablist"
-        aria-label="Discover"
-        className="no-scrollbar flex gap-2 overflow-x-auto"
-      >
-        {lenses.map((c) => {
-          const active = filter === c.key;
-          return (
-            <button
-              key={c.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => pick(c.key)}
-              className={`mn-chip ${active ? "is-active" : ""}`}
-            >
-              {c.icon}
-              {c.label}
-            </button>
-          );
-        })}
+      <div className="no-scrollbar flex gap-2 overflow-x-auto">
+        <div role="tablist" aria-label="Discover" className="flex gap-2">
+          {lenses.map((c) => {
+            const active = filter === c.key;
+            return (
+              <button
+                key={c.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => pick(c.key)}
+                className={`mn-chip ${active ? "is-active" : ""}`}
+              >
+                {c.icon}
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
         <button
+          ref={triggerRef}
           type="button"
-          aria-haspopup="menu"
           aria-expanded={menuOpen}
+          aria-controls={optionsId}
           onClick={() => setMenuOpen((o) => !o)}
           className={`mn-chip ${activeType ? "is-active" : ""}`}
         >
@@ -102,7 +105,8 @@ export default function DiscoveryChips({
 
       {menuOpen && (
         <div
-          role="menu"
+          id={optionsId}
+          role="group"
           aria-label="Type of place"
           className={`mn-control animate-fade absolute top-full z-10 mt-2 w-44 overflow-hidden rounded-2xl py-1 ${
             menuAlign === "end" ? "right-0" : "left-0"
@@ -112,8 +116,7 @@ export default function DiscoveryChips({
             <button
               key={t}
               type="button"
-              role="menuitemradio"
-              aria-checked={filter === t}
+              aria-pressed={filter === t}
               onClick={() => pick(filter === t ? "all" : t)}
               className="flex w-full items-center justify-between px-4 py-2.5 text-left text-body text-graphite hover:bg-surface-2"
             >

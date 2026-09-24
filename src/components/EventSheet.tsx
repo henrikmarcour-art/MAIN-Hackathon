@@ -91,7 +91,7 @@ export default function EventSheet({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div
-                className={`flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider ${accent}`}
+                className={`flex items-center gap-1.5 text-caption uppercase ${accent}`}
               >
                 {venue.isPrivate && (
                   <span className="h-1.5 w-1.5 rounded-full bg-violet" />
@@ -104,7 +104,7 @@ export default function EventSheet({
                       ? `${categoryLabel} · busy now`
                       : categoryLabel}
               </div>
-              <h2 className="mt-1 truncate text-title font-semibold leading-tight tracking-tight text-graphite">
+              <h2 className="mt-1 truncate text-title text-graphite">
                 {venue.name}
               </h2>
               <p className="mt-0.5 text-meta text-graphite-muted">
@@ -133,7 +133,7 @@ export default function EventSheet({
 
           <dl className="mt-4 grid grid-cols-3 gap-2 border-y border-line/80 py-3">
             <div>
-              <dt className="text-caption uppercase tracking-wider text-graphite-muted">
+              <dt className="text-caption uppercase text-graphite-muted">
                 Time
               </dt>
               <dd className="mt-0.5 text-body font-semibold tabular-nums text-graphite">
@@ -141,15 +141,15 @@ export default function EventSheet({
               </dd>
             </div>
             <div>
-              <dt className="text-caption uppercase tracking-wider text-graphite-muted">
+              <dt className="text-caption uppercase text-graphite-muted">
                 Vibe
               </dt>
-              <dd className="mt-0.5 text-body font-semibold leading-snug text-graphite">
+              <dd className="mt-0.5 text-body font-semibold text-graphite">
                 {venue.vibe}
               </dd>
             </div>
             <div>
-              <dt className="text-caption uppercase tracking-wider text-graphite-muted">
+              <dt className="text-caption uppercase text-graphite-muted">
                 Price
               </dt>
               <dd className="mt-0.5 text-body font-semibold text-graphite">
@@ -161,7 +161,7 @@ export default function EventSheet({
             </div>
           </dl>
 
-          <p className="mt-3 text-body leading-relaxed text-graphite-soft">
+          <p className="mt-3 text-body text-graphite-soft">
             {venue.description}
           </p>
 
@@ -176,7 +176,7 @@ export default function EventSheet({
                 <AvatarStack people={venue.friendsGoing} size={30} />
               )}
               <span className="leading-tight">
-                <span className="block text-body font-semibold tabular-nums tracking-tight text-graphite">
+                <span className="block text-body font-semibold tabular-nums text-graphite">
                   {allGoing}{" "}
                   <span className="font-medium text-graphite-muted">going</span>
                 </span>
@@ -228,7 +228,7 @@ export default function EventSheet({
               </div>
             ) : (
               <div className="mt-4 flex items-center gap-2">
-                <div className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-graphite text-body font-semibold tracking-tight text-lime">
+                <div className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-graphite text-body font-semibold text-lime">
                   You’re hosting
                 </div>
                 {onDelete && (
@@ -263,7 +263,7 @@ export default function EventSheet({
               onClick={onToggleGoing}
               aria-pressed={going}
               className={[
-                "mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-body font-semibold tracking-tight transition-all active:scale-[0.98]",
+                "mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-body font-semibold transition-all active:scale-[0.98]",
                 going
                   ? "bg-graphite text-lime"
                   : venue.isPrivate

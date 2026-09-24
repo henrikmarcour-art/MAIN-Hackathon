@@ -53,7 +53,7 @@ export default function MapModeSheet({
             <span className="h-1 w-9 rounded-full bg-line" />
           </div>
           <div className="flex items-center justify-between pb-4 pt-3 md:pt-5">
-            <h2 className="text-headline font-semibold tracking-tight text-graphite">
+            <h2 className="text-headline text-graphite">
               Map style
             </h2>
             <button
@@ -88,7 +88,7 @@ export default function MapModeSheet({
                     ].join(" ")}
                   />
                   <span
-                    className={`text-meta tracking-tight ${
+                    className={`text-meta ${
                       active ? "font-semibold text-graphite" : "font-medium text-graphite-soft"
                     }`}
                   >
