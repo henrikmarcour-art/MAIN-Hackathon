@@ -44,6 +44,15 @@ export function LocateIcon(p: IconProps) {
   );
 }
 
+export function LocateOffIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M8.6 7.2A6 6 0 0 1 16.8 15.4M15.4 16.8A6 6 0 0 1 7.2 8.6" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M3 3l18 18" />
+    </svg>
+  );
+}
+
 export function RadarIcon(p: IconProps) {
   return (
     <svg {...base(p)}>

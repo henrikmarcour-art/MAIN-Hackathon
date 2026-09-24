@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   invitations,
@@ -19,10 +19,11 @@ import MapActions from "@/components/map/MapActions";
 import TimeScrubber, { TimeClock } from "@/components/map/TimeScrubber";
 import MapModeSheet from "@/components/map/MapModeSheet";
 import DiscoveryRail from "@/components/map/DiscoveryRail";
+import MapNotice from "@/components/map/MapNotice";
+import type { CameraRequest } from "@/components/MapView";
 import {
   TRENDING_MIN,
   type Filter,
-  type MapTheme,
 } from "@/components/map/types";
 import { uniqueFriendsAcrossVenues, displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 import { addHours, clockInMaastricht, formatClock, isHappeningAt, isUpcomingTonight } from "@/lib/night-time";
@@ -32,6 +33,14 @@ import {
   fetchCreatedEvents,
   insertEvent,
 } from "@/lib/supabase-events";
+import type { MapStyleId } from "@/lib/map/styles";
+import { isInMaastricht } from "@/lib/map/geo";
+import {
+  loadPreferences,
+  recordInteraction,
+  updatePreferences,
+} from "@/lib/preferences";
+import { useUserLocation, type UserPosition } from "@/lib/use-user-location";
 
 // MapLibre touches `window`; load it client-side only.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -54,10 +63,84 @@ export default function Home() {
   const [mapPick, setMapPick] = useState<PickedLngLat | null>(null);
 
   // Map UI state
-  const [theme, setTheme] = useState<MapTheme>("light");
-  const [showRadar, setShowRadar] = useState(true);
+  // Only MapView (client-only) reads this, so a stored choice can't cause a hydration mismatch.
+  const [mapStyle, setMapStyle] = useState<MapStyleId>(
+    () => loadPreferences().mapStyle
+  );
+  const chooseMapStyle = useCallback((next: MapStyleId) => {
+    setMapStyle(next);
+    updatePreferences((p) => ({ ...p, mapStyle: next }));
+  }, []);
   const [modeOpen, setModeOpen] = useState(false);
-  const [recenterNonce, setRecenterNonce] = useState(0);
+
+  // Location: asked for only when the locate button is tapped; never stored.
+  const {
+    status: locationStatus,
+    position: userPosition,
+    request: requestLocation,
+  } = useUserLocation();
+  const [cameraRequest, setCameraRequest] = useState<CameraRequest | null>(null);
+  const [centeredOnUser, setCenteredOnUser] = useState(false);
+  const [notice, setNotice] = useState<{ id: number; message: string } | null>(
+    null
+  );
+  const locatePendingRef = useRef(false);
+  const showNotice = useCallback(
+    (message: string) => setNotice({ id: Date.now(), message }),
+    []
+  );
+  const dismissNotice = useCallback(() => setNotice(null), []);
+  const stopCenteringOnUser = useCallback(() => setCenteredOnUser(false), []);
+
+  const goToUser = useCallback(
+    (pos: UserPosition) => {
+      if (isInMaastricht(pos)) {
+        setCameraRequest({ target: "user", nonce: Date.now() });
+        setCenteredOnUser(true);
+      } else {
+        setCameraRequest({ target: "city", nonce: Date.now() });
+        setCenteredOnUser(false);
+        showNotice("You're outside Maastricht, so here's the city.");
+      }
+    },
+    [showNotice]
+  );
+
+  const handleLocate = useCallback(() => {
+    if (locationStatus === "active" && userPosition) {
+      goToUser(userPosition);
+      return;
+    }
+    if (locationStatus === "unsupported") {
+      showNotice("This browser can't share your location.");
+      return;
+    }
+    locatePendingRef.current = true;
+    requestLocation();
+  }, [locationStatus, userPosition, goToUser, showNotice, requestLocation]);
+
+  // Finish a locate tap once the browser answers.
+  useEffect(() => {
+    if (!locatePendingRef.current) return;
+    if (locationStatus === "active" && userPosition) {
+      locatePendingRef.current = false;
+      goToUser(userPosition);
+    } else if (locationStatus === "denied") {
+      locatePendingRef.current = false;
+      showNotice("Location is off. Allow it for this site in your browser settings.");
+    } else if (locationStatus === "unavailable") {
+      locatePendingRef.current = false;
+      showNotice("Couldn't find your location. Try again in a moment.");
+    } else if (locationStatus === "unsupported") {
+      locatePendingRef.current = false;
+      showNotice("This browser can't share your location.");
+    }
+  }, [locationStatus, userPosition, goToUser, showNotice]);
+
+  // Flying to a venue moves the camera away from the visitor.
+  useEffect(() => {
+    if (focusId) setCenteredOnUser(false);
+  }, [focusId]);
   const [timeOpen, setTimeOpen] = useState(false);
   const [hourOffset, setHourOffset] = useState(0);
   const [clockTick, setClockTick] = useState(() => Date.now());
@@ -93,6 +176,15 @@ export default function Home() {
     () => [...allVenues, ...createdVenues],
     [createdVenues]
   );
+
+  // Personalization groundwork: count opens per category (local only, nothing hidden yet).
+  const catalogRef = useRef(catalog);
+  catalogRef.current = catalog;
+  useEffect(() => {
+    if (!selectedId) return;
+    const venue = catalogRef.current.find((v) => v.id === selectedId);
+    if (venue) recordInteraction("open", venue);
+  }, [selectedId]);
 
   const invitedVenueIds = useMemo(
     () => new Set(invitations.map((inv) => inv.venueId)),
@@ -320,12 +412,13 @@ export default function Home() {
           setHourOffset(0);
         }}
         focusId={focusId}
-        theme={theme}
+        mapStyle={mapStyle}
         filter={filter}
-        showRadar={showRadar}
         crowd={crowd}
         lockPan={panLocked}
-        recenterNonce={recenterNonce}
+        userPosition={userPosition}
+        cameraRequest={cameraRequest}
+        onUserPan={stopCenteringOnUser}
         pickMode={mapPickActive}
         pickLngLat={mapPick}
         onPick={setMapPick}
@@ -418,7 +511,6 @@ export default function Home() {
 
       {onMap && !selected && (
         <MapActions
-          theme={theme}
           modeOpen={modeOpen}
           timeOpen={timeOpen}
           onOpenMode={() => {
@@ -426,7 +518,9 @@ export default function Home() {
             setHourOffset(0);
             setModeOpen((o) => !o);
           }}
-          onRecenter={() => setRecenterNonce((n) => n + 1)}
+          locationStatus={locationStatus}
+          centeredOnUser={centeredOnUser}
+          onLocate={handleLocate}
           onToggleTime={() => {
             setTimeOpen((open) => !open);
             setHourOffset(0);
@@ -463,12 +557,12 @@ export default function Home() {
         }}
       />
 
+      <MapNotice notice={notice} onDismiss={dismissNotice} />
+
       <MapModeSheet
         open={onMap && modeOpen}
-        theme={theme}
-        showRadar={showRadar}
-        onTheme={setTheme}
-        onToggleRadar={() => setShowRadar((r) => !r)}
+        mapStyle={mapStyle}
+        onMapStyle={chooseMapStyle}
         onClose={() => setModeOpen(false)}
       />
 

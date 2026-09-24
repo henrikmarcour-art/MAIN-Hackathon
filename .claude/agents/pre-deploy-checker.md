@@ -8,8 +8,8 @@ You decide whether the current branch is ready to go live. You never deploy, pus
 
 ## Checklist
 1. **Git state.** Current branch, uncommitted changes, and whether the branch is behind `origin/main` (`git fetch origin`, then compare).
-2. **TypeScript.** `npx tsc --noEmit` must pass. If it hangs, delete `tsconfig.tsbuildinfo` and retry once.
-3. **Build.** Try `npm run build` only with a time limit (about 3 minutes) and never while a dev server is running. On Henrik's Mac it can hang (a known issue). If so, stop it, mark the result "not verified locally", and rely on the Vercel preview build of the branch.
+2. **TypeScript.** `npx tsc --noEmit` must pass.
+3. **Build.** Run `npm run build` with a time limit (about 3 minutes) and never while a dev server is running. If it stalls at 0% CPU, the clone is probably in an iCloud-synced folder (see Known issues in `AGENTS.md`): stop it, mark the result "not verified locally", and rely on the Vercel preview build of the branch.
 4. **Environment variables.**
    - Every `process.env.*` used in `src/` is listed in `.env.example`.
    - Client-side variables are `NEXT_PUBLIC_*`, and nothing secret is `NEXT_PUBLIC_*`.
