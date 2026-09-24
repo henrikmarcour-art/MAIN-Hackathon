@@ -22,10 +22,13 @@
   --shadow-sheet: 0 -8px 40px rgba(28, 28, 30, 0.14);
 }
 
+/* Safari 26 ignores theme-color and tints the status-bar strip and the area
+   around its floating toolbar from this background, so it follows the map
+   style (--mn-canvas is set from MAP_CANVAS_COLOR in page.tsx). */
 html,
 body {
   height: 100%;
-  background: var(--color-surface);
+  background: var(--mn-canvas, #f1eee7);
   color: var(--color-graphite);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -38,24 +41,6 @@ body {
   overflow: hidden;
 }
 
-/* Keep the required basemap attribution visible above the bottom nav */
-.maplibregl-ctrl-bottom-right {
-  bottom: calc(148px + env(safe-area-inset-bottom));
-  right: 8px;
-}
-@media (min-width: 768px) {
-  .maplibregl-ctrl-bottom-right {
-    bottom: 0;
-  }
-}
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  color: var(--color-graphite-muted);
-  background: rgba(250, 248, 244, 0.85);
-  border-radius: 6px 0 0 0;
-  padding: 2px 6px;
-}
 .maplibregl-ctrl-attrib a {
   color: var(--color-graphite-soft);
 }

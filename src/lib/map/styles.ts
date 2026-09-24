@@ -16,6 +16,17 @@ export function isDarkMapStyle(id: MapStyleId) {
   return id !== "standard";
 }
 
+/**
+ * The colour at the map's edges. Safari 26 ignores theme-color and tints the
+ * status-bar strip and the area around its floating toolbar from the page
+ * background, so the page background follows the map to read edge-to-edge.
+ */
+export const MAP_CANVAS_COLOR: Record<MapStyleId, string> = {
+  standard: "#f1eee7",
+  night: "#111214",
+  satellite: "#1b1c1e",
+};
+
 /** Our recoloured OpenFreeMap "bright" (rebuilt by `npm run map:style`). */
 const BASE_STYLE_URL = "/map-styles/maasnow-natural.json";
 const FALLBACK_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
@@ -50,7 +61,7 @@ export function placeholderStyle(id: MapStyleId): StyleSpecification {
       {
         id: "background",
         type: "background",
-        paint: { "background-color": id === "standard" ? "#f1eee7" : NIGHT.bg },
+        paint: { "background-color": MAP_CANVAS_COLOR[id] },
       },
     ],
   };
@@ -164,7 +175,7 @@ export function quietStyle(base: StyleSpecification): StyleSpecification {
 // ---------------------------------------------------------------------------
 
 const NIGHT = {
-  bg: "#111214",
+  bg: MAP_CANVAS_COLOR.night,
   landuse: "#141518",
   residential: "#131417",
   park: "#131915",
@@ -307,7 +318,7 @@ export function satelliteStyle(quiet: StyleSpecification): StyleSpecification {
       {
         id: "background",
         type: "background",
-        paint: { "background-color": "#1b1c1e" },
+        paint: { "background-color": MAP_CANVAS_COLOR.satellite },
       },
       {
         id: "pdok-aerial",

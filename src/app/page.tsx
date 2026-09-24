@@ -33,7 +33,7 @@ import {
   fetchCreatedEvents,
   insertEvent,
 } from "@/lib/supabase-events";
-import type { MapStyleId } from "@/lib/map/styles";
+import { MAP_CANVAS_COLOR, type MapStyleId } from "@/lib/map/styles";
 import { isInMaastricht } from "@/lib/map/geo";
 import {
   loadPreferences,
@@ -71,6 +71,16 @@ export default function Home() {
     setMapStyle(next);
     updatePreferences((p) => ({ ...p, mapStyle: next }));
   }, []);
+
+  // The map is the edge-to-edge surface on every tab, so the browser's
+  // status-bar and toolbar areas take its colour.
+  useEffect(() => {
+    const color = MAP_CANVAS_COLOR[mapStyle];
+    document.documentElement.style.setProperty("--mn-canvas", color);
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", color);
+  }, [mapStyle]);
   const [modeOpen, setModeOpen] = useState(false);
 
   // Location: asked for only when the locate button is tapped; never stored.
