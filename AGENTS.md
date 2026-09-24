@@ -21,7 +21,11 @@ A mobile-first web app that shows where Maastricht is going tonight: a map of ba
 | `src/data/events.ts` | Hardcoded seed venues, people, `currentUser`, invitations. **Shared hot file.** |
 | `src/data/maastricht-places.ts` | OpenStreetMap places used by the address search. |
 | `src/lib/supabase.ts`, `src/lib/supabase-events.ts` | Supabase client and all event reads/writes/deletes. |
-| `src/lib/night-time.ts`, `src/lib/nightlife-heat.ts` | Night clock (18:00–05:00), time slider logic, heat-map overlay. |
+| `src/lib/night-time.ts` | Night clock (18:00–05:00) and time slider logic. |
+| `src/lib/map/styles.ts` | The three base maps (Standard, Night, Satellite), all derived from one style with provider POIs removed. |
+| `src/lib/use-user-location.ts` | The visitor's location (asked for on tap only, never stored). |
+| `src/lib/preferences.ts`, `src/lib/relevance.ts` | Per-browser preferences (`localStorage`) and venue relevance scoring. Groundwork: nothing is hidden based on it yet. |
+| `src/lib/nightlife-heat.ts` | Heat-map overlay. **Disabled**; kept for a possible return. |
 | `src/lib/venue-attendance.ts`, `venue-attendees.ts`, `event-chat.ts` | Local-only social data (crowd counts, attendee lists, chat). |
 | `scripts/` | Dev-server helpers (port cleanup, `doctor`) and the map-style builder. |
 | `.claude/` | Shared AI setup: skills (incl. workflows), agents, legacy commands. |
@@ -73,15 +77,14 @@ A mobile-first web app that shows where Maastricht is going tonight: a map of ba
 ## Validation
 
 - Always run `npx tsc --noEmit`. It is fast and reliable.
-- `npm run build` only with a time limit, and never while `npm run dev` is running (they share `.next`).
+- `npm run build` with a time limit, and never while `npm run dev` is running (they share `.next`).
 - The dependable full build check is the Vercel preview build of your branch.
 - For database changes, verify with a real query using the anon key, not only an admin/service connection.
 - For UI changes, check in a browser at phone width (390 × 844) and at desktop width.
 
 ## Known issues
 
-- **On Henrik's Mac, `npm run dev`, `npm run build` and `npm run lint` can hang** with no output. The cause is unknown and it is not the project code (Vercel builds fine). Use time limits and fall back to the Vercel preview. Do not run `npm run lint` unless asked.
-- If `npx tsc --noEmit` hangs, delete `tsconfig.tsbuildinfo` (stale cache) and retry.
+- **Don't keep the project in an iCloud-synced folder (Desktop / Documents with "Optimize Mac Storage").** iCloud evicts files, `node_modules` included, and every tool that reads an evicted file waits for a slow download. That is why `npm run dev`, `build`, `lint` and even `tsc` appeared to "hang" with 0% CPU on Henrik's Mac. Keep your clone somewhere like `~/Developer/maasnow`. Check with `find node_modules -flags +dataless | head` (any output means evicted files).
 - Running `npm run build` while the dev server runs corrupts `.next` and gives HTTP 500s. Fix with `npm run dev:clean`.
 
 ## AI setup in this repo

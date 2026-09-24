@@ -1,27 +1,40 @@
 "use client";
 
-import type { MapTheme } from "./types";
-import { ClockIcon, LayersIcon, LocateIcon } from "./icons";
+import type { LocationStatus } from "@/lib/use-user-location";
+import { ClockIcon, LayersIcon, LocateIcon, LocateOffIcon } from "./icons";
 
 type Props = {
-  theme: MapTheme;
   modeOpen: boolean;
   timeOpen: boolean;
+  locationStatus: LocationStatus;
+  /** True while the map is centred on the visitor's position. */
+  centeredOnUser: boolean;
   onOpenMode: () => void;
-  onRecenter: () => void;
+  onLocate: () => void;
   onToggleTime: () => void;
   className?: string;
 };
 
+function locateLabel(status: LocationStatus, centered: boolean) {
+  if (status === "locating") return "Finding your location";
+  if (status === "denied" || status === "unsupported") return "Location is off";
+  if (status === "active" && centered) return "Showing your location";
+  return "Show my location";
+}
+
 export default function MapActions({
-  theme,
   modeOpen,
   timeOpen,
+  locationStatus,
+  centeredOnUser,
   onOpenMode,
-  onRecenter,
+  onLocate,
   onToggleTime,
   className = "",
 }: Props) {
+  const locationOff =
+    locationStatus === "denied" || locationStatus === "unsupported";
+  const label = locateLabel(locationStatus, centeredOnUser);
   return (
     <div
       className={`pointer-events-auto flex flex-col gap-2 ${className}`}
@@ -43,20 +56,25 @@ export default function MapActions({
         type="button"
         onClick={onOpenMode}
         aria-expanded={modeOpen}
-        aria-label={`Map mode: ${theme === "light" ? "Light" : "Night"}`}
-        title="Map mode"
+        aria-label="Map style"
+        title="Map style"
         className={`mn-action ${modeOpen ? "is-active" : ""}`}
       >
         <LayersIcon size={17} />
       </button>
       <button
         type="button"
-        onClick={onRecenter}
-        aria-label="Recenter map"
-        title="Recenter"
-        className="mn-action"
+        onClick={onLocate}
+        aria-label={label}
+        title={label}
+        className={[
+          "mn-action",
+          locationStatus === "locating" ? "is-locating" : "",
+          locationStatus === "active" && centeredOnUser ? "is-active" : "",
+          locationOff ? "is-off" : "",
+        ].join(" ")}
       >
-        <LocateIcon size={17} />
+        {locationOff ? <LocateOffIcon size={17} /> : <LocateIcon size={17} />}
       </button>
     </div>
   );

@@ -7,16 +7,24 @@ import {
   MAASTRICHT_CENTER_MOBILE,
   type Venue,
 } from "@/data/events";
-import { MAP_STYLES, type MapTheme, type Filter } from "@/components/map/types";
+import type { Filter } from "@/components/map/types";
+import {
+  buildMapStyle,
+  isDarkMapStyle,
+  loadBaseStyle,
+  placeholderStyle,
+  type MapStyleId,
+} from "@/lib/map/styles";
+import { metersPerPixel } from "@/lib/map/geo";
+import type { UserPosition } from "@/lib/use-user-location";
+
+/** Ask the map to move; a new `nonce` repeats the same request. */
+export type CameraRequest = { target: "user" | "city"; nonce: number };
 import {
   attendeeCountNoun,
   displayAttendeeCount,
   type CrowdQuery,
 } from "@/lib/venue-attendance";
-import {
-  NightlifeHeatOverlay,
-  venuesToHeatPoints,
-} from "@/lib/nightlife-heat";
 
 type Props = {
   venues: Venue[];
@@ -27,12 +35,13 @@ type Props = {
   onMapClick: () => void;
   /** Fly to this id when it changes (used after accepting an invite) */
   focusId: string | null;
-  theme: MapTheme;
+  mapStyle: MapStyleId;
   filter: Filter;
-  showRadar: boolean;
   crowd: CrowdQuery;
-  /** Increment to request a recenter */
-  recenterNonce: number;
+  userPosition: UserPosition | null;
+  cameraRequest: CameraRequest | null;
+  /** The visitor started dragging the map themselves. */
+  onUserPan?: () => void;
   /** When true, MapLibre pan is off so overlay controls can be dragged. */
   lockPan?: boolean;
   pickMode?: boolean;
@@ -107,10 +116,9 @@ function applyMarkerState(
     active: boolean;
     going: boolean;
     hottest: boolean;
-    showRadar: boolean;
   }
 ) {
-  const { count, countNoun, active, going, hottest, showRadar } = opts;
+  const { count, countNoun, active, going, hottest } = opts;
   const size = markerSize(count);
 
   // Never assign el.className — MapLibre adds maplibregl-marker + anchor classes.
@@ -119,7 +127,6 @@ function applyMarkerState(
   el.classList.toggle("is-active", active);
   el.classList.toggle("is-going", going);
   el.classList.toggle("is-hottest", hottest);
-  el.classList.toggle("has-radar", showRadar);
   el.classList.toggle("kind-bar", v.category === "bar");
   el.classList.toggle("kind-club", v.category === "club");
   el.classList.toggle("kind-event", v.category === "event");
@@ -144,8 +151,26 @@ function isMobileViewport() {
   return window.innerWidth < 768;
 }
 
-function inMaastricht(lng: number, lat: number) {
-  return lng > 5.6 && lng < 5.78 && lat > 50.79 && lat < 50.9;
+function sizeAccuracyRing(el: HTMLElement, map: maplibregl.Map, pos: UserPosition) {
+  const diameter = (2 * pos.accuracy) / metersPerPixel(pos.lat, map.getZoom());
+  // Hide when it would vanish under the dot or swamp the screen.
+  el.style.setProperty(
+    "--accuracy",
+    diameter < 26 || diameter > 600 ? "0px" : `${Math.round(diameter)}px`
+  );
+}
+
+/** Loads the real style; `isCurrent` lets a newer choice win a race. */
+function applyMapStyle(
+  map: maplibregl.Map,
+  id: MapStyleId,
+  isCurrent: () => boolean
+) {
+  loadBaseStyle()
+    .then((base) => {
+      if (isCurrent()) map.setStyle(buildMapStyle(id, base));
+    })
+    .catch((err) => console.error("Map style failed to load", err));
 }
 
 export default function MapView({
@@ -155,11 +180,12 @@ export default function MapView({
   onSelect,
   onMapClick,
   focusId,
-  theme,
+  mapStyle,
   filter,
-  showRadar,
   crowd,
-  recenterNonce,
+  userPosition,
+  cameraRequest,
+  onUserPan,
   lockPan = false,
   pickMode = false,
   pickLngLat = null,
@@ -168,7 +194,7 @@ export default function MapView({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, VenueMarker>>(new Map());
-  const themeRef = useRef<MapTheme>(theme);
+  const styleRef = useRef<MapStyleId>(mapStyle);
   const pickMarkerRef = useRef<maplibregl.Marker | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -178,17 +204,11 @@ export default function MapView({
   pickModeRef.current = pickMode;
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
-  const heatOverlayRef = useRef<NightlifeHeatOverlay | null>(null);
-  const venuesRef = useRef(venues);
-  venuesRef.current = venues;
-  const goingIdsRef = useRef(goingIds);
-  goingIdsRef.current = goingIds;
-  const filterRef = useRef(filter);
-  filterRef.current = filter;
-  const showRadarRef = useRef(showRadar);
-  showRadarRef.current = showRadar;
-  const crowdRef = useRef(crowd);
-  crowdRef.current = crowd;
+  const onUserPanRef = useRef(onUserPan);
+  onUserPanRef.current = onUserPan;
+  const userPositionRef = useRef(userPosition);
+  userPositionRef.current = userPosition;
+  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const lockPanRef = useRef(lockPan);
   lockPanRef.current = lockPan;
 
@@ -200,45 +220,38 @@ export default function MapView({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: MAP_STYLES[themeRef.current],
+        style: placeholderStyle(styleRef.current),
         // On mobile, sit slightly north so pins fall between the header and the rail.
         center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
         zoom: isMobile ? 13.6 : 14.6,
         minZoom: 12,
         maxZoom: 18,
         pitch: 0,
-        attributionControl: { compact: false },
+        attributionControl: false,
       });
     } catch (err) {
       console.error("Map failed to start", err);
       return;
     }
+    // Bottom corners sit under the rail and sheets, so credits live top-right:
+    // shown in full on load, collapsed to an "i" once the map is moved.
+    map.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      "top-right"
+    );
     map.touchZoomRotate.disableRotation();
     map.dragRotate.disable();
     if (lockPanRef.current) map.dragPan.disable();
     map.on("error", (e) => {
       console.error("Map error", e.error ?? e);
     });
-    const attachHeat = () => {
-      heatOverlayRef.current?.destroy();
-      try {
-        const overlay = new NightlifeHeatOverlay(map);
-        overlay.setPoints(
-          venuesToHeatPoints(
-            venuesRef.current,
-            goingIdsRef.current,
-            filterRef.current,
-            crowdRef.current
-          )
-        );
-        overlay.setVisible(showRadarRef.current);
-        heatOverlayRef.current = overlay;
-      } catch (err) {
-        console.error("Heatmap overlay failed", err);
-      }
-    };
-    map.on("load", attachHeat);
-    map.on("style.load", attachHeat);
+    // Only real drags fire this, not our own easeTo/flyTo animations.
+    map.on("dragstart", () => onUserPanRef.current?.());
+    map.on("zoom", () => {
+      const pos = userPositionRef.current;
+      const el = userMarkerRef.current?.getElement();
+      if (pos && el) sizeAccuracyRing(el, map, pos);
+    });
     map.on("click", (e) => {
       if (pickModeRef.current) {
         onPickRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat });
@@ -247,6 +260,12 @@ export default function MapView({
       onMapClickRef.current();
     });
     mapRef.current = map;
+    const initialStyle = styleRef.current;
+    applyMapStyle(
+      map,
+      initialStyle,
+      () => mapRef.current === map && styleRef.current === initialStyle
+    );
     if (process.env.NODE_ENV === "development") {
       (window as unknown as { __mnMap?: maplibregl.Map }).__mnMap = map;
     }
@@ -257,8 +276,8 @@ export default function MapView({
       }
       markers.forEach((entry) => entry.marker.remove());
       markers.clear();
-      heatOverlayRef.current?.destroy();
-      heatOverlayRef.current = null;
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -267,10 +286,14 @@ export default function MapView({
   // Swap basemap style; DOM markers and camera survive the swap.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || themeRef.current === theme) return;
-    themeRef.current = theme;
-    map.setStyle(MAP_STYLES[theme]);
-  }, [theme]);
+    if (!map || styleRef.current === mapStyle) return;
+    styleRef.current = mapStyle;
+    applyMapStyle(
+      map,
+      mapStyle,
+      () => mapRef.current === map && styleRef.current === mapStyle
+    );
+  }, [mapStyle]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -312,7 +335,6 @@ export default function MapView({
         active: v.id === selectedId,
         going: goingIds.has(v.id),
         hottest: v.id === hottestId,
-        showRadar,
       };
       const existing = markers.get(v.id);
       if (existing) {
@@ -348,13 +370,7 @@ export default function MapView({
         .addTo(map);
       markers.set(v.id, { marker, hit });
     }
-  }, [venues, selectedId, goingIds, showRadar, filter, crowd]);
-
-  useEffect(() => {
-    const overlay = heatOverlayRef.current;
-    overlay?.setPoints(venuesToHeatPoints(venues, goingIds, filter, crowd));
-    overlay?.setVisible(showRadar);
-  }, [venues, goingIds, filter, showRadar, crowd]);
+  }, [venues, selectedId, goingIds, filter, crowd]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -396,61 +412,68 @@ export default function MapView({
     });
   }, [focusId, venues]);
 
-  // Recenter: use geolocation only when already granted, otherwise fall back silently.
+  // The visitor's location dot with its accuracy ring.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || recenterNonce === 0) return;
+    if (!map) return;
+    if (!userPosition) {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+      return;
+    }
+    let marker = userMarkerRef.current;
+    if (!marker) {
+      const el = document.createElement("div");
+      el.className = "mn-user";
+      el.setAttribute("role", "img");
+      el.setAttribute("aria-label", "Your location");
+      el.innerHTML =
+        '<span class="mn-user-accuracy"></span><span class="mn-user-dot"></span>';
+      // Above ordinary pins, below the selected one.
+      el.style.zIndex = "5";
+      marker = new maplibregl.Marker({
+        element: el,
+        anchor: "center",
+        subpixelPositioning: true,
+      })
+        .setLngLat([userPosition.lng, userPosition.lat])
+        .addTo(map);
+      userMarkerRef.current = marker;
+    } else {
+      marker.setLngLat([userPosition.lng, userPosition.lat]);
+    }
+    sizeAccuracyRing(marker.getElement(), map, userPosition);
+  }, [userPosition]);
+
+  // Camera moves requested by the page (locate button, "show me Maastricht").
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !cameraRequest) return;
     const isMobile = isMobileViewport();
-    const fallback = () =>
+    const pos = userPositionRef.current;
+    if (cameraRequest.target === "user" && pos) {
       map.easeTo({
-        center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
-        zoom: isMobile ? 13.6 : 14.6,
+        center: [pos.lng, pos.lat],
+        zoom: Math.max(map.getZoom(), 15.5),
+        // Keep the dot clear of the rail on phones.
+        offset: isMobile ? [0, -90] : [0, 0],
         duration: 700,
       });
-
-    let cancelled = false;
-    const locate = () => {
-      if (!("geolocation" in navigator)) return fallback();
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (cancelled) return;
-          const { longitude, latitude } = pos.coords;
-          if (inMaastricht(longitude, latitude)) {
-            map.easeTo({ center: [longitude, latitude], zoom: 15, duration: 700 });
-          } else {
-            fallback();
-          }
-        },
-        () => {
-          if (!cancelled) fallback();
-        },
-        { timeout: 2500, maximumAge: 60_000 }
-      );
-    };
-
-    if (typeof navigator !== "undefined" && navigator.permissions?.query) {
-      navigator.permissions
-        .query({ name: "geolocation" })
-        .then((status) => {
-          if (cancelled) return;
-          if (status.state === "granted") locate();
-          else fallback();
-        })
-        .catch(() => {
-          if (!cancelled) fallback();
-        });
-    } else {
-      fallback();
+      return;
     }
-    return () => {
-      cancelled = true;
-    };
-  }, [recenterNonce]);
+    map.easeTo({
+      center: isMobile ? MAASTRICHT_CENTER_MOBILE : MAASTRICHT_CENTER,
+      zoom: isMobile ? 13.6 : 14.6,
+      duration: 700,
+    });
+  }, [cameraRequest]);
 
   return (
     <div
       ref={containerRef}
-      className={`absolute inset-0 mn-map theme-${theme}`}
+      className={`absolute inset-0 mn-map style-${mapStyle} ${
+        isDarkMapStyle(mapStyle) ? "is-dark" : ""
+      }`}
       style={{ position: "absolute", inset: 0 }}
     />
   );

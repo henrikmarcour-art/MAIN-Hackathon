@@ -11,7 +11,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#faf8f4",
+  // Matches the Standard map; page.tsx keeps it in sync with the chosen style.
+  themeColor: "#f1eee7",
 };
 
 export default function RootLayout({
