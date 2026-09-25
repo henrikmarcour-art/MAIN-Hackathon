@@ -29,9 +29,12 @@ How MaasNow is built and deployed today (Phase 1: no auth). Keep this file in sy
 ## Frontend
 
 - **Next.js 15 App Router, one page.** `src/app/page.tsx` is a client component (`"use client"`) that holds all UI state and renders every screen: map, For You, Create, Profile, and the sheets on top of them.
+- **Two layouts, one state owner.** `useDesktop()` (`src/lib/use-desktop.ts`, `min-width: 1024px`) picks the layout after hydration; it is `null` until then, so neither layout flashes. `page.tsx` keeps owning shared state (going, invites, created events, location, map style) and renders either:
+  - **Desktop:** `src/components/DesktopShell.tsx`. It owns what only desktop needs: the panel view (`tonight | friends | venue | invite | search`), the time chosen with `TimeCapsule` (an absolute moment, so it doesn't drift as the clock ticks), search (`src/lib/search.ts`) and the desktop pin plan (`src/lib/map/desk-pins.ts`, pure). The panel views live in `src/components/panel/`.
+  - **Mobile and tablet:** the existing tree (top bar, rail, sheets, bottom nav, `TimeScrubber`), unchanged.
 - **Map:** `src/components/MapView.tsx` uses MapLibre GL. It is loaded with `dynamic(..., { ssr: false })` because MapLibre needs `window`.
-- **Night time model:** `src/lib/night-time.ts` defines the night as 18:00–05:00 Maastricht time. `TimeScrubber` lets the user move through the night, and venues are filtered by whether they are open at the selected hour.
-- **Styling:** Tailwind CSS v4 with tokens in `src/app/globals.css` (`@theme`). See `docs/DESIGN_SYSTEM.md`.
+- **Night time model:** `src/lib/night-time.ts` defines the night as 18:00–05:00 Maastricht time. On mobile, `TimeScrubber` moves by the hour and hides venues that aren't open. On desktop, `TimeCapsule` moves by 5 minutes and venues closed at that time only **dim** (a class toggle), so scrubbing never rebuilds markers. Updates reach the page at most once per animation frame.
+- **Styling:** Tailwind CSS v4. Tokens live in `src/app/tokens.css` (`@theme`), imported by `globals.css`. Desktop components use mode-aware roles (`bg-ui-panel`, `text-ui-ink` …) that `.mn-ui[data-mode]` swaps for Standard, Night and Satellite. See `docs/DESIGN_SYSTEM.md` §2 and §15.
 - **Server code:** only `src/app/api/places/route.ts`, a small proxy to Photon for address search. There are no other API routes, no server actions and no middleware.
 
 ## Map
@@ -39,12 +42,13 @@ How MaasNow is built and deployed today (Phase 1: no auth). Keep this file in sy
 - **One base style, three looks.** `public/map-styles/maasnow-natural.json` is our recoloured OpenFreeMap "Bright". `npm run build` re-downloads and recolours it, so **never hand-edit that JSON**. `src/lib/map/styles.ts` derives every style from it at runtime:
   - **Quiet base map (all styles):** removes the provider's points of interest (shops, cafés, restaurants, bus stops, airport), one-way arrows and road shields, and adds a small text-only landmark layer (churches, museums, castles, train stations) from zoom 15.
   - **Standard:** the quiet base style.
-  - **Night:** our own low-glare palette applied to every layer, not the provider's generic dark theme.
-  - **Satellite:** PDOK `Actueel_ortho25` aerial photos (25 cm, summer), with our street and place labels on top. Tiles are limited to the Netherlands.
+  - **Night:** our own warm, low-glare palette applied to every layer, not the provider's generic dark theme.
+  - **Desktop specks:** `buildMapStyle(id, base, { places: true })` adds a `mn-places` circle layer for the other OpenStreetMap places. It's a map layer rather than DOM markers, so it costs nothing while scrubbing. Hidden on mobile.
+  - **Satellite:** PDOK `Actueel_ortho25` aerial photos (25 cm, summer), darkened about a fifth, with our street and place labels on top. Tiles are limited to the Netherlands.
 - **Satellite licence:** CC BY 4.0, Beeldmateriaal Nederland, served by PDOK.
   - The raster source carries the required credit: "Luchtfoto © Beeldmateriaal Nederland (CC BY 4.0) via PDOK".
   - PDOK's terms require a Referer header, which browsers send for these tile requests by default. Don't add `referrerPolicy: "no-referrer"` anywhere.
-- **Credits are visible:** a compact attribution control sits top-right under the filter chips (the bottom corners are covered by the rail and sheets). It's shown in full on load and collapses to an "i" once the map is moved.
+- **Credits are visible:** a compact attribution control. On mobile it sits top-right under the filter chips (the bottom corners are covered by the rail and sheets); on desktop it sits bottom-left, clear of the controls and the time capsule. It's shown in full on load and collapses to an "i" once the map is moved.
 - **Your location** (`src/lib/use-user-location.ts`):
   - The browser prompt appears only when the Locate button is tapped. If permission was granted earlier, the dot appears without a prompt.
   - The position lives in React state only: **never stored** in `localStorage` and **never sent** to Supabase.

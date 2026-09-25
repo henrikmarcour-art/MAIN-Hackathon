@@ -1,0 +1,109 @@
+/*
+ * MaasNow design tokens — the single source of truth (DESIGN_SYSTEM §2–§6).
+ *
+ * Only real, named design decisions live here. Tailwind's own internals
+ * (--tw-*, --spacing, --radius-*, --leading-*) come from Tailwind itself and
+ * are deliberately not in this file, so design-sync reads just these tokens.
+ *
+ * Imported by globals.css; `@theme` turns each token into utilities
+ * (bg-graphite, text-title, shadow-float, font-mono …).
+ */
+
+@theme {
+  /* --- Colour: neutrals (mobile + legacy surfaces) --- */
+  --color-graphite: #1c1c1e;
+  --color-graphite-soft: #4a4a4f;
+  --color-graphite-muted: #8a8a8f;
+  --color-surface: #faf8f4;
+  --color-surface-2: #f1eee7;
+  --color-line: #e6e2d9;
+
+  /* --- Colour: desktop panel (approved desktop system) --- */
+  /* The desktop panel is pure white with near-black ink: the colourful map
+     carries the warmth, the UI carries the hierarchy. */
+  --color-panel: #ffffff;
+  --color-ink: #0e0e10;
+  --color-ink-soft: #55555b;
+  --color-ink-muted: #8c8c92;
+  --color-mist: #f3f3f1; /* quiet fills: inputs, secondary buttons, cards */
+  --color-hairline: #ececea;
+
+  /* --- Colour: warm night neutrals (Night map mode) --- */
+  /* Warm black, not blue-black: sodium streetlight on limestone. */
+  --color-night: #0d0c0b; /* panel */
+  --color-night-2: #1c1a17; /* fills and map controls */
+  --color-night-3: #23201c; /* the time capsule, raised one step */
+  --color-night-map: #12110f; /* map canvas behind the tiles */
+  --color-night-ink: #f5efe6; /* warm white text */
+  --color-night-glow: #ffe9cc; /* venue points of light on the night map */
+
+  /* --- Colour: meaning (one meaning per colour) --- */
+  --color-lime: #c6f432; /* brand: you, live, the one main action */
+  --color-lime-deep: #9ed10e; /* lime as a ring/stroke on light surfaces */
+  --color-orange: #ff7a1a; /* busy / trending */
+  --color-violet: #6f56ff; /* private / invite-only — a thread, never a fill */
+  --color-violet-night: #b3a6ff; /* violet on dark panels and maps */
+  --color-cobalt: #2563eb; /* friends (mobile legacy; desktop uses faces) */
+
+  /* --- Type --- */
+  /* --font-geist and --font-geist-mono are injected at runtime by next/font
+     (layout.tsx); the stacks below are what components use. */
+  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Type scale (DESIGN_SYSTEM §3). Use text-title etc., not text-[NNpx].
+     Tailwind reads the `--text-<name>--<property>` sub-tokens as that
+     step's line height, tracking and weight. */
+  --text-hero: 48px; /* desktop panel page titles: "Tonight", venue name */
+  --text-hero--line-height: 46px;
+  --text-hero--letter-spacing: -0.05em;
+  --text-hero--font-weight: 700;
+  --text-feature: 38px; /* the pick over its photo */
+  --text-feature--line-height: 38px;
+  --text-feature--letter-spacing: -0.045em;
+  --text-feature--font-weight: 700;
+  --text-display: 28px;
+  --text-display--line-height: 32px;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-title--letter-spacing: -0.015em;
+  --text-title--font-weight: 600;
+  --text-headline: 17px;
+  --text-headline--line-height: 22px;
+  --text-headline--letter-spacing: -0.01em;
+  --text-headline--font-weight: 600;
+  --text-body: 15px;
+  --text-body--line-height: 20px;
+  --text-meta: 13px;
+  --text-meta--line-height: 18px;
+  --text-caption: 11px;
+  --text-caption--line-height: 14px;
+  --text-caption--letter-spacing: 0.06em;
+  --text-caption--font-weight: 600;
+
+  /* --- Elevation --- */
+  --shadow-float: 0 1px 2px rgba(28, 28, 30, 0.06), 0 8px 24px rgba(28, 28, 30, 0.1);
+  --shadow-control: 0 1px 2px rgba(28, 28, 30, 0.05), 0 4px 14px rgba(28, 28, 30, 0.08);
+  --shadow-sheet: 0 -8px 40px rgba(28, 28, 30, 0.14);
+}
+
+/*
+ * Mode-aware UI roles (desktop). Components use these names only; the map
+ * mode swaps their values (see `.mn-ui[data-mode]` in globals.css), so
+ * Standard, Night and Satellite each look like themselves without a second
+ * code path. `inline` keeps the var() reference live at runtime.
+ */
+@theme inline {
+  --color-ui-panel: var(--ui-panel);
+  --color-ui-ink: var(--ui-ink);
+  --color-ui-ink-soft: var(--ui-ink-soft);
+  --color-ui-ink-muted: var(--ui-ink-muted);
+  --color-ui-line: var(--ui-line);
+  --color-ui-fill: var(--ui-fill);
+  --color-ui-violet: var(--ui-violet);
+  --color-ui-control: var(--ui-control);
+  --color-ui-control-ink: var(--ui-control-ink);
+}

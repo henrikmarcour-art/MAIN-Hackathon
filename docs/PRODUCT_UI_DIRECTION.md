@@ -171,16 +171,19 @@ The bottom nav keeps 4 tabs: **Map · For You · Create · Profile**. Create sta
 
 ---
 
-## Desktop layout (next: `feat/desktop-side-panel`)
+## Desktop layout (built: `feat/desktop-system`)
 
-Desktop is designed first; mobile gets a deliberately reduced version later.
+Desktop is designed first; mobile gets a deliberately reduced version later. Approved in Claude Design ("MaasNow Desktop System"); the visual rules are in DESIGN_SYSTEM §15.
 
-- **A large map plus one docked left panel** (about 380 px, full height, collapsible), instead of many floating elements.
-  - Panel header: wordmark, search, and For You / Create / Profile (replacing the bottom tab bar on desktop).
-  - Default state "Tonight": pending invites as one row, the lens control, Popular tonight as a vertical list.
-  - Venue state: the selected venue replaces the list (back arrow, Escape closes).
-- Floating over the map: only Locate, Layers and a bottom-center time pill that expands into the slider.
-- Mobile later: **one primary layer at a time** (map, venue sheet, or discovery feed), never all at once.
+- **A large map plus one persistent left panel** (440 px, full height) from 1024 px. Tablets keep the mobile layout.
+  - **Tonight** (default): header (wordmark, search, your face), "Tonight" with the chosen time and how many people are out, your pick as a large block, friends out as a row of faces, one pending invitation row, then three more places with a small "All types" filter.
+  - **Friends:** where it's going first (the shared destination and Join), then everyone out right now and where they head next. *Sample data.*
+  - **Venue:** photo block, name, time and hours, walking time (only with your real location), friends and the "+N going" count, description, and one lime "I'm going".
+  - **Invite:** violet thread, host, headline, message, When / Where (the area until you join) / Bring, who's in, and "I'm in" / "Not tonight".
+  - **Search:** takes over the panel; results light up on the map; "Try" shortcuts are real queries.
+- **Floating over the map:** map style (top right), zoom and locate (bottom right), and the time capsule (bottom centre). Nothing else.
+- **Profile and Create** open from the avatar menu as their existing cards over the map. A dedicated desktop flow is not designed yet.
+- **Mobile:** unchanged for now. Later it gets **one primary layer at a time** (map, venue sheet or discovery feed), never all at once.
 
 ## What this needs beyond UI (later phases)
 
@@ -188,9 +191,9 @@ Desktop is designed first; mobile gets a deliberately reduced version later.
 |---|---|
 | Event images | An `image_url` column and Supabase Storage (upload in Create) |
 | "I'm going" visible to others, real counts | An `event_attendees` table, which needs auth for identity (Phase 2) |
-| Friends are going (real) | Auth plus a friends/follows table |
+| Friends are going (real), where friends are now | Auth plus a friends/follows table, and location sharing with consent (desktop Friends view uses `friendPlans` sample data) |
 | Live updates without reload | Supabase Realtime on `events` (and attendees) |
-| Private events for invited people | An invites table plus RLS (Phase 2) |
+| Private events for invited people | An invites table plus RLS (Phase 2). Invite "Bring" and area hints are sample fields on `Invitation` |
 | Route › | A deep link to Apple/Google Maps; no backend |
 
 Until then the UI can show these areas using the local data we have, clearly marked as sample data where relevant.

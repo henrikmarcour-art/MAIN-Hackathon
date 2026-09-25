@@ -132,3 +132,45 @@ export function ChevronIcon(p: IconProps) {
     </svg>
   );
 }
+
+export function PlusIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function MinusIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+export function BackIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M15 5l-7 7 7 7" />
+    </svg>
+  );
+}
+
+export function LockIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+/** Filter: three lines narrowing down. */
+export function FilterIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 7h16M7 12h10M10 17h4" />
+    </svg>
+  );
+}

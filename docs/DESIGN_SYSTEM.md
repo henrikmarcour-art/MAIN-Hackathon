@@ -21,6 +21,8 @@ Tokens live in `src/app/globals.css` (`@theme`). A value that is not in this doc
 
 ### Tokens
 
+All tokens live in **`src/app/tokens.css`** (Tailwind v4 `@theme`), imported by `globals.css`. That file is the single source of truth, and design-sync reads its tokens from there.
+
 | Token | Hex | Role |
 |---|---|---|
 | `graphite` | `#1c1c1e` | Primary text, primary dark buttons, icons |
@@ -33,8 +35,22 @@ Tokens live in `src/app/globals.css` (`@theme`). A value that is not in this doc
 | `lime-deep` | `#9ed10e` | Lime on light surfaces for strokes/rings where plain lime disappears |
 | `orange` | `#ff7a1a` | State: **busy / trending** |
 | `violet` | `#6f56ff` | State: **private / invite-only** |
-| `cobalt` | `#2563eb` | State: **friends / social** |
+| `cobalt` | `#2563eb` | State: **friends / social** on mobile. Desktop shows friends as faces, not a colour |
+| `violet-night` | `#b3a6ff` | Violet on dark panels and the Night map |
 | `danger` *(add)* | `#c2383d` | Destructive actions and errors (AA on `surface`) |
+
+**Desktop panel and Night mode** (approved desktop system, §15):
+
+| Token | Hex | Role |
+|---|---|---|
+| `panel` | `#ffffff` | Desktop panel: pure white paper. The colourful map carries the warmth |
+| `ink` / `ink-soft` / `ink-muted` | `#0e0e10` / `#55555b` / `#8c8c92` | Desktop text, primary, secondary and tertiary |
+| `mist` | `#f3f3f1` | Quiet fills: inputs, secondary buttons, the friends card |
+| `hairline` | `#ececea` | Dividers on the white panel |
+| `night` / `night-2` / `night-3` | `#0d0c0b` / `#1c1a17` / `#23201c` | Warm-black panel, fills and controls, the time capsule |
+| `night-map` | `#12110f` | Night map canvas |
+| `night-ink` | `#f5efe6` | Warm white text on Night |
+| `night-glow` | `#ffe9cc` | Venue points of light on the Night map |
 
 ### Rules
 
@@ -46,16 +62,19 @@ Tokens live in `src/app/globals.css` (`@theme`). A value that is not in this doc
   - `graphite-muted` is only 3.2:1: use it for placeholders, disabled states and optional hints, never for information the user needs.
 - **No raw hex in components.** Avatar colors are the one exception; they live in the data layer.
 - **No gradients** except in data visualization: the heat map and the time-slider track.
-- **Night map theme:** the map goes dark, but floating UI stays on `surface`. Don't invert components per theme until a dark token set exists.
+- **Map modes theme the desktop UI.** Desktop components use mode-aware roles (`bg-ui-panel`, `text-ui-ink`, `bg-ui-fill`, `text-ui-violet`, `--ui-control`, `--map-*`), which `.mn-ui[data-mode]` in `globals.css` swaps per mode (§15). Mobile floating UI still stays on `surface` in every mode.
+- **Violet is a thread, never a fill.** A lock, a ring around a face, a 3 px top line.
 
 ---
 
 ## 3. Typography
 
-**Geist**, loaded with `next/font/google` in `src/app/layout.tsx` (self-hosted at build time, no npm package) and exposed as `--font-geist` → `--font-sans`, with the system stack as fallback. Weights: **500, 600 and 700 only** (400 for long body text). 700 is for `display` only; titles and names use 600.
+**Geist**, loaded with `next/font/google` in `src/app/layout.tsx` (self-hosted at build time, no npm package) and exposed as `--font-geist` → `--font-sans`, with the system stack as fallback. **Geist Mono** (`--font-mono`, `font-mono`) sets times and counts on desktop. Weights: **500, 600 and 700 only** (400 for long body text). 700 is for `display`, and on desktop for the large panel titles (`hero`, `feature`) and venue names in lists; elsewhere titles and names use 600.
 
 | Style | Size / line height | Weight | Tracking | Use |
 |---|---|---|---|---|
+| `hero` | 48 / 46 | 700 | −0.05em | Desktop panel titles ("Tonight", the venue name) |
+| `feature` | 38 / 38 | 700 | −0.045em | The pick's name over its photo (desktop) |
 | `display` | 28 / 32 | 700 | −0.02em | Screen titles ("For You", "Tonight") |
 | `title` | 22 / 28 | 700 | −0.015em | Venue name in the detail sheet, section titles |
 | `headline` | 17 / 22 | 600 | −0.01em | Card titles, list-row titles |
@@ -181,7 +200,8 @@ This is the same anatomy in a horizontal floating card (`lg` radius, `shadow-flo
 - **Scrim:** only in the full state, `graphite` at 20% opacity. No scrim while peeking.
 - **The primary action is pinned to the bottom** with safe-area padding. Content scrolls under it with a `line` divider.
 - **Only one sheet at a time.** Opening a second one (e.g. the attendee list) replaces or stacks it as a full-screen push; sheets don't pile up.
-- **Desktop (≥ 768 px):** today the sheet is a 400 px floating card at the bottom right. **Decided direction (next feature, `feat/desktop-side-panel`):** one docked **left** panel (about 380 px, full height) that holds search, invites, Popular tonight and the selected venue, with the map as the only thing to its right. See `docs/PRODUCT_UI_DIRECTION.md`.
+- **Tablet (768–1023 px):** the sheet is a 400 px floating card at the bottom right.
+- **Desktop (≥ 1024 px):** no sheets. The selected venue, invitations, friends and search all live in the docked left panel (§15).
 
 ---
 
@@ -210,6 +230,20 @@ The map is the product, so pins are quiet by default. Most places are small dots
 - Personal and selected pins are always prominent. The rest fill the cap in rank order: **6** prominent pins below zoom 14, **10** below 15, **16** below 16, **24** above.
 - A prominent pin that would overlap a stronger one on screen (radii + 6 px) falls back to a dot. Off-screen pins count as dots until the map stops moving; tiers are recomputed on every `moveend`.
 - No clustering yet. With a few dozen places, caps and overlap fallback are enough.
+
+**Desktop pins** (≥ 1024 px, approved desktop system). What each pin is comes from `lib/map/desk-pins.ts`, and `MapView` only draws it (`.mn-dpin` in `globals.css`):
+
+| Pin | Look | Who gets it |
+|---|---|---|
+| **Speck** | A tiny map-layer point | The ~130 other OpenStreetMap bars and restaurants (layer `mn-places`) |
+| **Dot** | 6 px point | Every venue by default |
+| **Named** | 9 px point + name (a glow on Night, a dark plate on Satellite) | Tonight: the next 4 best-ranked open places |
+| **Cluster** | One friend's face + "+N" badge + name | Tonight: up to 3 open places with 2+ friends |
+| **Selected** | 20 px solid point with one pill above it: faces, name, hours | The venue open in the panel. Everything else dims |
+| **Host** | The host's face with a violet ring and "Exact spot shared when you join" | The invite view |
+| **Destination** | Ring + "3 friends from 23:30" | The Friends view, next to friends' faces where they are now |
+
+Places closed at the chosen time dim to 28%, and so do places a view isn't about. Dimming is a class toggle, so the time capsule never rebuilds markers. Named and cluster pins that would collide with a stronger one fall back to a dot.
 
 **Rules**
 
@@ -267,3 +301,30 @@ The map is the product, so pins are quiet by default. Most places are small dots
 2. When you touch a component for any other reason, move its sizes, radii and colors onto the scales. Don't do repo-wide restyles in unrelated PRs.
 3. Redesign the map pins (§10) as one dedicated change, since it affects the whole map.
 4. The `frontend-designer` agent and `/review-work` check new UI against this document.
+
+---
+
+## 15. Desktop system (≥ 1024 px)
+
+Approved in Claude Design ("MaasNow Desktop System"). Built in `feat/desktop-system`. Code: `src/components/DesktopShell.tsx`, `src/components/panel/*`, `src/components/map/TimeCapsule.tsx`, `MapControls.tsx`.
+
+- **Composition:** a 440 px left panel with **one contextual view at a time** (Tonight, Friends, Venue, Invite, Search), and the map as the dominant canvas to its right. Only map controls float: map style top-right, zoom and locate bottom-right, the time capsule bottom-centre. Nothing overlaps.
+- **Header:** lowercase `maasnow` wordmark, search, and your face. The face opens a small menu (Profile, Create event); desktop has no tab bar. Escape steps back to Tonight.
+- **Filters:** Trending stays ranking logic only. Venue types sit behind one small "All types" button above the Tonight list, never a row of chips.
+- **Time capsule:** the single time control. No Now/Later/Late buttons, no graph, no persistent timeline.
+  - At rest it shows `● NOW 22:40`, or `23:30 | ● Now` once a time is chosen. Hover shows faint ‹ ›.
+  - Press and drag, the wheel or a trackpad swipe opens a 392 px strip that slides under a fixed lime needle, in 5-minute steps up to 05:00. It folds back about 0.5 s after release.
+  - Keyboard: ← → move 10 minutes; Home or Esc returns to now. It is an ARIA slider.
+  - The strip moves by transform, and the panel and map update at most once per frame.
+- **Map modes** (the UI adapts, it isn't one style):
+
+| Mode | Panel | Map | Controls and capsule |
+|---|---|---|---|
+| Standard | White `panel`, `ink` text | Colourful street map | White controls, `ink` capsule |
+| Night | Warm-black `night`, `night-ink` text, `violet-night` | Warm-dark palette, venues glow | `night-2` controls, `night-3` capsule with a hairline |
+| Satellite | White panel | Imagery darkened ~20%, names on dark plates | Dark controls and capsule |
+
+- **Lime** means you, live and the one main action ("I'm going", "I'm in", "Join"). **Violet** means private, as a thread only.
+- **Faces:** initials on the person's colour until real photos exist. No stock portraits.
+- **Images:** no venue photos yet. A calm dark block stands in until an `image_url` column exists.
+

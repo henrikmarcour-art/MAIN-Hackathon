@@ -72,6 +72,38 @@ for (const f of walk(types).filter((f) => f.endsWith(".d.ts"))) {
   writeFileSync(f, text);
 }
 
+// -- design tokens, on their own
+// src/app/tokens.css is the single source of truth. Its `@theme` block becomes
+// a plain :root stylesheet in a tiny package (cfg.tokensPkg), so the
+// converter lists only real MaasNow tokens, never Tailwind's --tw-* internals.
+// The `@theme inline` block (mode-aware aliases) is app wiring, not tokens.
+{
+  const src = readFileSync(join(root, "src/app/tokens.css"), "utf8");
+  const header = src.match(/^\/\*[\s\S]*?\*\//)?.[0] ?? "";
+  const start = src.search(/@theme\s*\{/);
+  let depth = 0;
+  let end = start;
+  for (let i = src.indexOf("{", start); i < src.length; i++) {
+    if (src[i] === "{") depth++;
+    else if (src[i] === "}" && --depth === 0) {
+      end = i;
+      break;
+    }
+  }
+  const body = src.slice(src.indexOf("{", start) + 1, end);
+  const tokensDir = resolve(here, ".cache/tokens");
+  rmSync(tokensDir, { recursive: true, force: true });
+  mkdirSync(tokensDir, { recursive: true });
+  writeFileSync(
+    join(tokensDir, "tokens.css"),
+    `${header}\n\n/* Generated from src/app/tokens.css by .design-sync/build.mjs. */\n:root {${body}}\n`
+  );
+  writeFileSync(
+    join(tokensDir, "package.json"),
+    JSON.stringify({ name: "maasnow-tokens", version: "0.1.0", private: true }, null, 2)
+  );
+}
+
 // -- package shell
 writeFileSync(join(pkg, "index.ts"), 'export * from "../../entry";\n');
 writeFileSync(

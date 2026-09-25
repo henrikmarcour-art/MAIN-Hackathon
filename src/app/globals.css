@@ -1,48 +1,7 @@
 @import "tailwindcss";
 @import "maplibre-gl/dist/maplibre-gl.css" layer(base);
+@import "./tokens.css";
 
-@theme {
-  --color-graphite: #1c1c1e;
-  --color-graphite-soft: #4a4a4f;
-  --color-graphite-muted: #8a8a8f;
-  --color-surface: #faf8f4;
-  --color-surface-2: #f1eee7;
-  --color-line: #e6e2d9;
-  --color-lime: #c6f432;
-  --color-lime-deep: #9ed10e;
-  --color-orange: #ff7a1a;
-  --color-violet: #6f56ff;
-  --color-cobalt: #2563eb;
-
-  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont,
-    "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-
-  /* Type scale (DESIGN_SYSTEM §3). Use text-title etc., not text-[NNpx]. */
-  --text-display: 28px;
-  --text-display--line-height: 32px;
-  --text-display--letter-spacing: -0.02em;
-  --text-display--font-weight: 700;
-  --text-title: 22px;
-  --text-title--line-height: 28px;
-  --text-title--letter-spacing: -0.015em;
-  --text-title--font-weight: 600;
-  --text-headline: 17px;
-  --text-headline--line-height: 22px;
-  --text-headline--letter-spacing: -0.01em;
-  --text-headline--font-weight: 600;
-  --text-body: 15px;
-  --text-body--line-height: 20px;
-  --text-meta: 13px;
-  --text-meta--line-height: 18px;
-  --text-caption: 11px;
-  --text-caption--line-height: 14px;
-  --text-caption--letter-spacing: 0.06em;
-  --text-caption--font-weight: 600;
-
-  --shadow-float: 0 1px 2px rgba(28, 28, 30, 0.06), 0 8px 24px rgba(28, 28, 30, 0.1);
-  --shadow-control: 0 1px 2px rgba(28, 28, 30, 0.05), 0 4px 14px rgba(28, 28, 30, 0.08);
-  --shadow-sheet: 0 -8px 40px rgba(28, 28, 30, 0.14);
-}
 
 /* Safari 26 ignores theme-color and tints the status-bar strip and the area
    around its floating toolbar from this background, so it follows the map
@@ -485,6 +444,19 @@ body {
   top: calc(max(12px, env(safe-area-inset-top)) + 108px);
   z-index: 25;
 }
+/* Desktop: the right edge holds the map controls, so credits sit bottom-left. */
+.mn-map.is-desk .maplibregl-ctrl-top-right {
+  top: auto;
+  right: auto;
+  bottom: 12px;
+  left: 12px;
+}
+/* …and wrap before they reach the time capsule (half of 392px + gaps). */
+.mn-map.is-desk .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib {
+  float: left;
+  margin: 0;
+  max-width: calc(50vw - 440px / 2 - 230px);
+}
 @media (min-width: 768px) {
   .mn-map .maplibregl-ctrl-top-right {
     top: 80px;
@@ -816,4 +788,600 @@ body {
   border: 2.5px solid #1c1c1e;
   transform: rotate(-45deg);
   box-shadow: 0 6px 16px rgba(28, 28, 30, 0.28);
+}
+
+/* ================================================================== */
+/* Desktop system (≥ 1024 px): panel + map, themed by the map mode.     */
+/* Components use the --ui-* (panel, controls) and --map-* (pins)       */
+/* roles; each mode below swaps their values. Standard is the default. */
+/* ================================================================== */
+.mn-ui {
+  /* Panel: white paper, ink type (tokens: panel, ink, mist, hairline) */
+  --ui-panel: var(--color-panel);
+  --ui-ink: var(--color-ink);
+  --ui-ink-soft: var(--color-ink-soft);
+  --ui-ink-muted: var(--color-ink-muted);
+  --ui-line: var(--color-hairline);
+  --ui-fill: var(--color-mist);
+  --ui-violet: var(--color-violet);
+  --ui-img: #1b1b1e;
+  --ui-panel-edge: 1px 0 0 rgba(0, 0, 0, 0.06), 8px 0 30px rgba(0, 0, 0, 0.06);
+  /* Map controls and the time capsule */
+  --ui-control: #ffffff;
+  --ui-control-ink: var(--color-ink);
+  --ui-control-line: var(--color-hairline);
+  --ui-control-border: 0 solid transparent;
+  --ui-control-shadow: 0 2px 14px rgba(0, 0, 0, 0.16);
+  --ui-capsule: var(--color-ink);
+  --ui-capsule-ink: #ffffff;
+  --ui-capsule-border: 0 solid transparent;
+  /* Pins on the map */
+  --map-dot: var(--color-ink);
+  --map-dot-ring: #ffffff;
+  --map-ring: #ffffff; /* ring around faces and badges */
+  --map-sel: var(--color-ink);
+  --map-sel-ink: #ffffff;
+  --map-label: var(--color-ink);
+  --map-label-sub: var(--color-ink-soft);
+  --map-halo: #ffffff;
+  --map-plate: transparent;
+  --map-violet: var(--color-violet);
+  --map-quiet: 0.42;
+  --map-glow: none;
+  --map-face-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+.mn-ui[data-mode="night"] {
+  /* Warm black panel and warm-dark map (tokens: night-*) */
+  --ui-panel: var(--color-night);
+  --ui-ink: var(--color-night-ink);
+  --ui-ink-soft: rgba(245, 239, 230, 0.68);
+  --ui-ink-muted: rgba(245, 239, 230, 0.42);
+  --ui-line: rgba(255, 240, 220, 0.09);
+  --ui-fill: var(--color-night-2);
+  --ui-violet: var(--color-violet-night);
+  --ui-img: #1a1815;
+  --ui-panel-edge: 1px 0 0 rgba(255, 240, 220, 0.09);
+  --ui-control: var(--color-night-2);
+  --ui-control-ink: var(--color-night-ink);
+  --ui-control-line: rgba(255, 240, 220, 0.09);
+  --ui-control-border: 1px solid rgba(255, 240, 220, 0.1);
+  --ui-control-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+  /* Warm graphite with a hairline, so it doesn't punch a hole in the map */
+  --ui-capsule: var(--color-night-3);
+  --ui-capsule-ink: var(--color-night-ink);
+  --ui-capsule-border: 1px solid rgba(255, 240, 220, 0.12);
+  --map-dot: var(--color-night-glow);
+  --map-dot-ring: rgba(0, 0, 0, 0.6);
+  --map-ring: var(--color-night);
+  --map-sel: var(--color-night-ink);
+  --map-sel-ink: #0a0a0a;
+  --map-label: var(--color-night-ink);
+  --map-label-sub: rgba(245, 239, 230, 0.72);
+  --map-halo: #000000;
+  --map-violet: var(--color-violet-night);
+  --map-quiet: 0.36;
+  --map-glow: 0 0 14px 3px rgba(255, 226, 190, 0.45);
+  --map-face-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+.mn-ui[data-mode="satellite"] {
+  /* Light panel stays readable; the map side goes dark */
+  --ui-control: #131315;
+  --ui-control-ink: #ffffff;
+  --ui-control-line: rgba(255, 255, 255, 0.12);
+  --ui-control-border: 1px solid rgba(255, 255, 255, 0.14);
+  --ui-control-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+  --ui-capsule-border: 1px solid rgba(255, 255, 255, 0.14);
+  --map-dot: #ffffff;
+  --map-dot-ring: rgba(0, 0, 0, 0.7);
+  --map-sel: #ffffff;
+  --map-sel-ink: #0b0b0d;
+  --map-label: #ffffff;
+  --map-label-sub: rgba(255, 255, 255, 0.85);
+  --map-halo: transparent;
+  --map-plate: rgba(12, 12, 14, 0.8); /* names sit on small dark labels */
+  --map-violet: #b4a8ff;
+  --map-quiet: 0.62;
+}
+
+/* The panel: one contextual surface at a time */
+.mn-panel {
+  background: var(--ui-panel);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-panel-edge);
+}
+.mn-panel-view {
+  animation: mn-panel-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes mn-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.mn-img {
+  background:
+    radial-gradient(120% 90% at 85% 10%, rgba(255, 255, 255, 0.07), transparent 60%),
+    var(--ui-img);
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Map controls: layers top-right, zoom + locate bottom-right */
+.mn-ctl {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--ui-control);
+  color: var(--ui-control-ink);
+  border: var(--ui-control-border);
+  box-shadow: var(--ui-control-shadow);
+}
+.mn-ctl > button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  transition: background-color 120ms ease-out;
+}
+.mn-ctl > button:hover {
+  background: color-mix(in srgb, var(--ui-control-ink) 7%, transparent);
+}
+.mn-ctl > button.is-on {
+  color: var(--color-ink);
+  background: var(--color-lime);
+}
+.mn-ctl > hr {
+  height: 1px;
+  border: 0;
+  margin: 0;
+  background: var(--ui-control-line);
+}
+
+/* ------------------------------------------------------------------ */
+/* Desktop pins: quiet dots, a few names, face clusters, one strong    */
+/* pill. Dimming is a class so the time capsule costs one toggle.      */
+/* ------------------------------------------------------------------ */
+.mn-map.is-desk .mn-marker-anchor .mn-dpin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 160ms ease-out;
+}
+.mn-dpin.is-dim {
+  opacity: 0.28;
+}
+.mn-dpin .d-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  background: var(--map-dot);
+  box-shadow: 0 0 0 2px var(--map-dot-ring);
+}
+.mn-dpin.k-named .d-dot {
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  box-shadow: 0 0 0 2px var(--map-dot-ring), var(--map-glow);
+}
+.mn-dpin.k-private .d-dot {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  background: var(--map-violet);
+  box-shadow: 0 0 0 2px var(--map-ring);
+}
+.mn-ui[data-mode="night"] .mn-dpin.k-private .d-dot {
+  box-shadow: 0 0 0 2px var(--map-ring), 0 0 12px var(--map-violet);
+}
+/* Your own plans: the only lime on the map */
+.mn-dpin.is-going .d-dot {
+  background: var(--color-lime);
+  box-shadow: 0 0 0 2.5px var(--color-ink), 0 0 0 7px rgba(198, 244, 50, 0.3);
+}
+.mn-dpin .d-label {
+  position: absolute;
+  left: calc(50% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+  text-align: left;
+  color: var(--map-label);
+  background: var(--map-plate);
+  text-shadow: 0 0 2px var(--map-halo), 0 0 4px var(--map-halo), 0 0 10px var(--map-halo);
+  pointer-events: none;
+}
+.mn-ui[data-mode="satellite"] .mn-dpin .d-label {
+  padding: 4px 9px;
+  border-radius: 8px;
+  text-shadow: none;
+}
+.mn-dpin .d-label.two b {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+}
+.mn-dpin .d-label.two span {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--map-label-sub);
+}
+.mn-dpin .d-face {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9999px;
+  color: #fff;
+  font-weight: 600;
+  overflow: hidden;
+}
+/* Cluster: one face + "+N" */
+.mn-dpin.k-cluster .d-cluster {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+}
+.mn-dpin.k-cluster .d-face {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+  box-shadow: 0 0 0 2.5px var(--map-ring), var(--map-face-shadow);
+}
+.mn-dpin .d-badge {
+  position: absolute;
+  right: -10px;
+  bottom: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--map-sel);
+  color: var(--map-sel-ink);
+  font: 700 11px/1 var(--font-mono);
+  box-shadow: 0 0 0 2px var(--map-ring);
+}
+.mn-dpin.k-cluster .d-label {
+  left: calc(50% + 32px);
+  font-size: 14px;
+}
+/* Selected: the one strong pill, above a solid point */
+.mn-dpin.k-selected .d-dot {
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  background: var(--map-sel);
+  box-shadow: 0 0 0 4px var(--map-ring), 0 0 0 14px color-mix(in srgb, var(--map-sel) 10%, transparent);
+}
+.mn-dpin .d-pill {
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% + 26px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 20px 0 8px;
+  border-radius: 26px;
+  white-space: nowrap;
+  background: var(--map-sel);
+  color: var(--map-sel-ink);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  animation: mn-fade-in 180ms ease-out;
+}
+.mn-dpin .d-pill:not(:has(.d-faces)) {
+  padding-left: 20px;
+}
+.mn-dpin .d-pill b {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.mn-dpin .d-pill .d-sub {
+  font: 500 13px var(--font-mono);
+  opacity: 0.7;
+}
+.mn-dpin .d-faces {
+  display: inline-flex;
+  padding-left: 2px;
+}
+.mn-dpin .d-faces .d-face {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+  box-shadow: 0 0 0 2.5px var(--map-sel);
+  margin-left: -10px;
+}
+.mn-dpin .d-faces .d-face:first-child {
+  margin-left: 0;
+}
+/* Invite: the host's face with a violet ring; the spot stays approximate */
+.mn-dpin.k-host .d-host {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: -28px 0 0 -28px;
+}
+.mn-dpin.k-host .d-face.big {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+  box-shadow: 0 0 0 3px var(--map-ring), 0 0 0 5px var(--map-violet), 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.mn-dpin.k-host .d-label {
+  left: calc(50% + 44px);
+}
+/* Friends view: where most friends end up */
+.mn-dpin.k-dest .d-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 9999px;
+  border: 2.5px solid var(--map-label);
+  background: var(--ui-panel);
+}
+.mn-dpin.k-dest .d-label {
+  left: calc(50% + 18px);
+}
+/* Friends' faces where they are right now */
+.mn-dgroup {
+  display: inline-flex;
+  pointer-events: none;
+  z-index: 7;
+}
+.mn-dgroup .d-face {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+  color: #fff;
+  font: 600 16px var(--font-sans);
+  margin-left: -14px;
+  box-shadow: 0 0 0 2.5px var(--map-ring), var(--map-face-shadow);
+}
+.mn-dgroup .d-face:first-child {
+  margin-left: 0;
+}
+.mn-dgroup.is-hosting .d-face {
+  box-shadow: 0 0 0 2.5px var(--map-ring), 0 0 0 4.5px var(--map-violet);
+}
+
+/* ------------------------------------------------------------------ */
+/* Time capsule: ● NOW 22:40 at rest; a strip under a lime needle      */
+/* while held. Width/height animate; the strip moves by transform.     */
+/* ------------------------------------------------------------------ */
+.mn-capsule {
+  position: relative;
+  width: 150px;
+  height: 48px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--ui-capsule);
+  color: var(--ui-capsule-ink);
+  border: var(--ui-capsule-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26), 0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  transition:
+    width 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 200ms ease-out;
+}
+.mn-capsule:not(.is-now) {
+  width: 176px;
+}
+.mn-capsule.is-open {
+  width: 392px;
+  height: 88px;
+  border-radius: 26px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.mn-capsule.is-dragging {
+  cursor: grabbing;
+}
+.mn-capsule:focus-visible {
+  box-shadow: 0 0 0 2px var(--ui-panel), 0 0 0 4px var(--color-lime);
+}
+.mn-capsule-rest {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: opacity 110ms ease-out, transform 160ms ease-out;
+}
+.mn-capsule.is-open .mn-capsule-rest {
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
+}
+.mn-capsule-hint {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+}
+.mn-capsule-hint.left {
+  left: 12px;
+}
+.mn-capsule-hint.right {
+  right: 12px;
+}
+.mn-capsule:hover .mn-capsule-hint {
+  opacity: 0.5;
+}
+.mn-capsule-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--color-lime);
+  box-shadow: 0 0 0 3px rgba(198, 244, 50, 0.22);
+}
+.mn-capsule-dot.small {
+  width: 7px;
+  height: 7px;
+  box-shadow: none;
+}
+.mn-capsule-now {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.mn-capsule-time {
+  font: 600 16px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.mn-capsule-sep {
+  width: 1px;
+  height: 16px;
+  background: color-mix(in srgb, var(--ui-capsule-ink) 18%, transparent);
+}
+.mn-capsule-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+}
+.mn-capsule-open {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out 40ms;
+}
+.mn-capsule.is-open .mn-capsule-open {
+  opacity: 1;
+}
+.mn-capsule-head {
+  position: absolute;
+  top: 12px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.mn-capsule-label,
+.mn-capsule-rel {
+  width: 90px;
+  font-size: 11px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--ui-capsule-ink) 52%, transparent);
+}
+.mn-capsule-label {
+  letter-spacing: 0.09em;
+}
+.mn-capsule-rel {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}
+.mn-capsule-big {
+  font: 700 26px var(--font-mono);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.mn-capsule-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52px;
+  height: 30px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 22%, #000 78%, transparent);
+}
+.mn-capsule-track {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  will-change: transform;
+  transition: transform 90ms linear;
+}
+.mn-capsule.is-dragging .mn-capsule-track {
+  transition: none;
+}
+.mn-capsule-tick {
+  position: absolute;
+  top: 3px;
+  width: 1.5px;
+  height: 5px;
+  margin-left: -0.75px;
+  border-radius: 1px;
+  background: var(--ui-capsule-ink);
+  opacity: 0.4;
+}
+.mn-capsule-tick.is-hour {
+  top: 0;
+  height: 10px;
+}
+.mn-capsule-tick.is-passed {
+  opacity: 0.95;
+}
+.mn-capsule-tick.is-past {
+  opacity: 0.18;
+}
+.mn-capsule-tick-label {
+  position: absolute;
+  top: 13px;
+  left: 0;
+  transform: translateX(-50%);
+  font: 500 10px var(--font-mono);
+  color: var(--ui-capsule-ink);
+  opacity: 0.6;
+}
+.mn-capsule-needle {
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 2.5px;
+  height: 16px;
+  margin-left: -1.25px;
+  border-radius: 2px;
+  background: var(--color-lime);
+  box-shadow: 0 0 0 3px var(--ui-capsule);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mn-capsule,
+  .mn-capsule-rest,
+  .mn-capsule-open,
+  .mn-capsule-track,
+  .mn-panel-view {
+    transition: none;
+    animation: none;
+  }
 }

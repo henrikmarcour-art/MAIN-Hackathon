@@ -3,8 +3,9 @@
    where the app source doesn't happen to use a given class yet. */
 @import "../src/app/globals.css";
 
-@source inline("{bg,text,border,fill,stroke,ring}-{graphite,graphite-soft,graphite-muted,surface,surface-2,line,lime,lime-deep,orange,violet,cobalt,white}");
-@source inline("text-{display,title,headline,body,meta,caption}");
+@source inline("{bg,text,border,fill,stroke,ring}-{graphite,graphite-soft,graphite-muted,surface,surface-2,line,lime,lime-deep,orange,violet,violet-night,cobalt,white,panel,ink,ink-soft,ink-muted,mist,hairline,night,night-2,night-3,night-ink}");
+@source inline("text-{hero,feature,display,title,headline,body,meta,caption}");
+@source inline("font-mono");
 @source inline("shadow-{float,control,sheet}");
 @source inline("{flex,inline-flex,grid,block,hidden,flex-col,flex-wrap,items-center,items-start,items-end,justify-between,justify-center,justify-end,relative,absolute,inset-0,overflow-hidden,overflow-y-auto,w-full,h-full,min-w-0,truncate,text-center,shrink-0}");
 @source inline("{p,px,py,pt,pb,m,mt,mb,gap}-{0,1,2,3,4,5,6,8,10,12}");

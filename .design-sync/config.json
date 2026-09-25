@@ -30,7 +30,12 @@
     "TrendIcon": null,
     "CloseIcon": null,
     "CheckIcon": null,
-    "ChevronIcon": null
+    "ChevronIcon": null,
+    "PlusIcon": null,
+    "MinusIcon": null,
+    "BackIcon": null,
+    "LockIcon": null,
+    "FilterIcon": null
   },
   "overrides": {
     "InviteCard": {
@@ -60,5 +65,7 @@
       "cardMode": "column"
     }
   },
-  "readmeHeader": ".design-sync/conventions.md"
+  "readmeHeader": ".design-sync/conventions.md",
+  "tokensPkg": "../.design-sync/.cache/tokens",
+  "tokensGlob": "tokens.css"
 }

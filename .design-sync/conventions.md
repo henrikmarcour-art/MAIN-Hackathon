@@ -21,13 +21,15 @@ Use these classes for your own layout; don't hard-code hex values.
 
 | Family | Classes |
 |---|---|
-| Color (bg-/text-/border-) | `graphite`, `graphite-soft`, `graphite-muted`, `surface`, `surface-2`, `line`, `lime`, `lime-deep`, `orange`, `violet`, `cobalt` |
-| Type scale | `text-display` 28, `text-title` 22, `text-headline` 17, `text-body` 15, `text-meta` 13, `text-caption` 11 (uppercase labels). Use these, not `text-[NNpx]` |
+| Color (bg-/text-/border-) | mobile: `graphite`, `graphite-soft`, `graphite-muted`, `surface`, `surface-2`, `line` · desktop panel: `panel`, `ink`, `ink-soft`, `ink-muted`, `mist`, `hairline` · Night mode: `night`, `night-2`, `night-3`, `night-ink`, `violet-night` · meaning: `lime`, `lime-deep`, `orange`, `violet`, `cobalt` |
+| Type scale | `text-hero` 48 (desktop panel titles), `text-feature` 38, `text-display` 28, `text-title` 22, `text-headline` 17, `text-body` 15, `text-meta` 13, `text-caption` 11 (uppercase labels). Use these, not `text-[NNpx]`; times and counts use `font-mono` |
 | Shadows | `shadow-control` (pills and buttons), `shadow-float` (cards), `shadow-sheet` (bottom sheets) |
 | Component classes | `mn-control` (frosted floating pill surface), `mn-chip` (filter chip), `mn-live-dot` (lime live indicator), `mn-card` |
 | Motion | `animate-fade`, `animate-sheet` |
 
 Colour roles: graphite is primary text and active states. Lime means "live now" and is only ever a small dot, never a fill. Orange means busy or trending counts. Violet means private invitations. Surfaces are warm (`surface` #faf8f4 on `surface-2` #f1eee7).
+
+**Reading the token list:** the type scale is `--text-<step>` plus sub-tokens `--text-<step>--line-height`, `--letter-spacing` and `--font-weight`. These are typography, even though the generated token index groups every `--text-*` name under colour. `--font-geist` and `--font-geist-mono` are set at runtime by the app's font loader; in designs, use `--font-sans` and `--font-mono`.
 
 CSS variables are available too: `var(--color-<name>)` for every colour above, plus `var(--shadow-control)` and `var(--shadow-float)`.
 

@@ -1,6 +1,6 @@
 import type { Category, Venue } from "@/data/events";
 import { TRENDING_MIN } from "@/components/map/types";
-import type { LngLat } from "@/lib/map/geo";
+import { distanceMeters, type LngLat } from "@/lib/map/geo";
 import {
   clockInMaastricht,
   isHappeningAt,
@@ -111,16 +111,6 @@ export function timeFit(v: Venue, at: Date): number {
     default:
       return 0.5;
   }
-}
-
-function distanceMeters(a: LngLat, b: LngLat) {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * 6371000 * Math.asin(Math.sqrt(h));
 }
 
 function habitBoost(prefs: Preferences, category: Category) {

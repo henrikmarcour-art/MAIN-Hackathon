@@ -21,11 +21,17 @@ MaasNow is a Next.js app, not a published component library. There is no `dist/`
   - `InviteCard`, `MapModeSheet`, `DiscoveryRail`, `ForYouPanel`, `MapNotice`, `TimeScrubber` and `BottomNav` use `cardMode: column`.
 - **`BrandPill`:** `compact` only hides a subtitle that itself only shows at `xl`, so its preview has a single `Default` cell.
 
+- **Tokens come from `src/app/tokens.css`**, the app's single token file. `build.mjs` turns its `@theme` block into `.design-sync/.cache/tokens/tokens.css` (a plain `:root`) inside a tiny package named `maasnow-tokens`. The config points at it with `tokensPkg: "../.design-sync/.cache/tokens"`, a path relative to `--node-modules`, because the converter resolves `tokensPkg` there, and `tokensGlob: "tokens.css"`. The generated README token list therefore holds only real tokens (57 at the desktop-system pass), not Tailwind's `--tw-*` internals. Side effect: the README says "from ../.design-sync/.cache/tokens".
+- **Token grouping:** the converter's token overview groups every `--text-*` name under colour. The conventions header labels them as the type scale. Don't fork `emit.mjs` to fix this.
+- **New icons need excluding:** icons exported through `entry.ts` need a `null` entry in `componentSrcMap`, or they become components. The desktop pass added Plus, Minus, Back, Lock and Filter.
+
 ## Known render warns
 
 - `[FONT_REMOTE] "SF Pro Text"`: part of the system-font fallback stack in `--font-sans`, which is expected. The informational warn is attributed to "SF Pro Text" even though the remote `@import` serves Geist.
 
 ## Re-sync risks
+
+- **Desktop system not in the synced scope yet:** the desktop system (`feat/desktop-system`) added panel views, `TimeCapsule`, `MapControls` and `DesktopShell`. None of them are in `entry.ts` yet. They depend on page state or the `.mn-ui[data-mode]` wrapper, so decide their preview story before adding them. The synced project was last uploaded before this pass: re-sync after the branch merges.
 
 - **Clock-dependent preview:** `TimeScrubber` calls `maxForwardHours(new Date())`, so its tick range depends on when the capture runs. The other previews pin `crowd.at` to a fixed date. A regrade that differs only in scrubber ticks is noise.
 - **Hand-mirrored types:** the `.d.ts` files reference `Venue`, `Invitation`, `CrowdQuery` and `Filter` without inlining them. The conventions header describes their shapes by hand, so update `.design-sync/conventions.md` if those types in `src/data/events.ts` or `src/lib/venue-attendance.ts` change.
