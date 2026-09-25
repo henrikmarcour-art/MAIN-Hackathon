@@ -35,7 +35,7 @@ export function Face({
 }) {
   return (
     <span
-      className="inline-grid shrink-0 place-items-center rounded-full font-semibold text-white"
+      className="mn-face inline-grid shrink-0 place-items-center rounded-full font-semibold text-white"
       style={{
         width: size,
         height: size,
@@ -68,7 +68,7 @@ export function Faces({
       {people.map((p, i) => (
         <span
           key={p.id}
-          className="relative inline-grid place-items-center rounded-full font-semibold text-white"
+          className="mn-face relative inline-grid place-items-center rounded-full font-semibold text-white"
           style={{
             width: size,
             height: size,

@@ -439,17 +439,22 @@ export default function DesktopShell(p: Props) {
           </div>
         )}
 
-        {tab === "profile" && (
-          <ProfilePanel venues={venues} goingIds={goingIds} onOpenVenue={openVenue} />
-        )}
-        {tab === "create" && (
-          <CreatePanel
-            mapPickActive={p.mapPickActive}
-            mapPick={p.mapPick}
-            onRequestMapPick={p.onStartMapPick}
-            onCancelMapPick={p.onCancelMapPick}
-            onCreate={p.onCreate}
-          />
+        {/* Above the map's credits (z-25) so nothing draws over the cards. */}
+        {tab !== "map" && (
+          <div className="pointer-events-none absolute inset-0 z-30">
+            {tab === "profile" && (
+              <ProfilePanel venues={venues} goingIds={goingIds} onOpenVenue={openVenue} />
+            )}
+            {tab === "create" && (
+              <CreatePanel
+                mapPickActive={p.mapPickActive}
+                mapPick={p.mapPick}
+                onRequestMapPick={p.onStartMapPick}
+                onCancelMapPick={p.onCancelMapPick}
+                onCreate={p.onCreate}
+              />
+            )}
+          </div>
         )}
 
         <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[72px]">

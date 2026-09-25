@@ -90,8 +90,8 @@ export default function ProfilePanel({
 
   return (
     <div className="animate-fade pointer-events-auto absolute inset-x-3 top-[calc(48px+env(safe-area-inset-top))] bottom-[calc(88px+env(safe-area-inset-bottom))] z-20 mx-auto overflow-y-auto rounded-[28px] border border-line/70 bg-surface shadow-sheet md:inset-x-0 md:bottom-10 md:top-10 md:w-[430px]">
-      {/* grabber */}
-      <div className="sticky top-0 z-10 flex justify-center bg-surface/95 pb-1 pt-3 backdrop-blur-md">
+      {/* grabber (touch only: desktop hides the bar, keeps the spacing) */}
+      <div className="sticky top-0 z-10 flex justify-center bg-surface/95 pb-1 pt-3 backdrop-blur-md lg:[&>span]:invisible">
         <span className="h-1.5 w-10 rounded-full bg-line" />
       </div>
 

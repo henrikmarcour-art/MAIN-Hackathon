@@ -883,6 +883,15 @@ body {
   --map-quiet: 0.62;
 }
 
+/* Night: dark avatar colours (graphite, deep browns) would vanish into the
+   warm-black panel and map, so every face gets a faint warm hairline. An
+   outline, so it adds to the ring box-shadows instead of replacing them. */
+.mn-ui[data-mode="night"] .mn-face,
+.mn-ui[data-mode="night"] .d-face {
+  outline: 1px solid rgba(255, 240, 220, 0.28);
+  outline-offset: -1px;
+}
+
 /* The panel: one contextual surface at a time */
 .mn-panel {
   background: var(--ui-panel);

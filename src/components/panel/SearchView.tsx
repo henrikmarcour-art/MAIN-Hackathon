@@ -42,7 +42,7 @@ export default function SearchView({ query, onQuery, results, onCancel, onOpenVe
   return (
     <div className="px-7 pb-8 pt-[26px]">
       <div className="flex items-center gap-3.5">
-        <label className="flex h-14 flex-1 items-center gap-3 rounded-[18px] bg-ui-fill px-[18px] text-ui-ink shadow-[inset_0_0_0_2px_var(--ui-ink)]">
+        <label className="flex h-14 min-w-0 flex-1 items-center gap-3 rounded-[18px] bg-ui-fill px-[18px] text-ui-ink shadow-[inset_0_0_0_2px_var(--ui-ink)]">
           <SearchIcon size={20} />
           <input
             ref={inputRef}
