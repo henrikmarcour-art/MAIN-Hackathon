@@ -42,6 +42,12 @@ export type Invitation = {
   venueId: string;
   from: Person;
   message: string;
+  /** SAMPLE: short headline on the invitation, e.g. "Rooftop tonight. You’re on the list." */
+  headline?: string;
+  /** SAMPLE: what to bring, if the host asked for something. */
+  bring?: string;
+  /** SAMPLE: the rough area shown before you join; the exact spot stays hidden. */
+  areaHint?: string;
 };
 
 export const people: Record<string, Person> = {
@@ -607,12 +613,18 @@ export const invitations: Invitation[] = [
     venueId: "leo-rooftop",
     from: people.leo,
     message: "Rooftop tonight from nine. Bring something to drink — I’ve got the speaker.",
+    headline: "Rooftop tonight. You’re on the list.",
+    bring: "Something to drink",
+    areaHint: "Tongersestraat",
   },
   {
     id: "inv-mara",
     venueId: "mara-canal",
     from: people.mara,
     message: "Canal house from half eight. I’ve got pasta if you bring wine.",
+    headline: "Pasta at the canal house.",
+    bring: "A bottle of wine",
+    areaHint: "Bassin",
   },
 ];
 
@@ -626,6 +638,34 @@ export const categoryMeta: Record<
   event: { label: "Events" },
   food: { label: "Food" },
 };
+
+/**
+ * SAMPLE DATA (Phase 1 demo, not stored anywhere): where friends are right
+ * now and where they head next, for the desktop Friends view. Real friend
+ * locations need auth, a friends table and consent (PRODUCT_UI_DIRECTION,
+ * "What this needs beyond UI"). Times are Maastricht clock, "HH:MM".
+ */
+export type FriendPlan = {
+  personId: string;
+  /** Where they are now. */
+  atVenueId: string;
+  since: string;
+  /** Where they're heading next, if they said. */
+  nextVenueId?: string;
+  nextAt?: string;
+  /** They're hosting a private night at `atVenueId`. */
+  hosting?: boolean;
+};
+
+export const friendPlans: FriendPlan[] = [
+  { personId: "thies", atVenueId: "take-five", since: "21:10", nextVenueId: "complex", nextAt: "23:30" },
+  { personId: "mara", atVenueId: "vogelstruys", since: "22:05", nextVenueId: "complex", nextAt: "23:30" },
+  { personId: "jonas", atVenueId: "tribunal", since: "20:30", nextVenueId: "complex", nextAt: "23:45" },
+  { personId: "sofie", atVenueId: "prevenir", since: "21:40", nextVenueId: "cliniq", nextAt: "00:00" },
+  { personId: "noor", atVenueId: "vogelstruys", since: "21:50", nextVenueId: "night-live", nextAt: "23:15" },
+  { personId: "finn", atVenueId: "de-poshoorn", since: "20:15", nextVenueId: "roto", nextAt: "23:30" },
+  { personId: "leo", atVenueId: "leo-rooftop", since: "21:00", hosting: true },
+];
 
 export const MAASTRICHT_CENTER: [number, number] = [5.6925, 50.8515];
 export const MAASTRICHT_CENTER_MOBILE: [number, number] = [5.693, 50.8538];

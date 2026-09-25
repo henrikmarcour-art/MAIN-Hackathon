@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { categoryMeta, currentUser, type Venue } from "@/data/events";
-import { Avatar } from "@/components/Avatar";
+import { categoryMeta, type Venue } from "@/data/events";
 import { displayAttendeeCount, type CrowdQuery } from "@/lib/venue-attendance";
 import type { Filter } from "./types";
 import { CloseIcon, SearchIcon } from "./icons";
@@ -72,17 +71,17 @@ export default function SearchCapsule({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mn-control flex h-14 w-full items-center gap-3 rounded-full pl-4 pr-2 text-left transition-transform active:scale-[0.99]"
+          className="mn-control flex h-14 w-full items-center gap-3 rounded-full pl-3 pr-5 text-left transition-transform active:scale-[0.99]"
           aria-label="Search tonight"
         >
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-graphite text-surface">
             <SearchIcon size={15} strokeWidth={2.4} />
           </span>
           <span className="min-w-0 flex-1 leading-tight">
-            <span className="block truncate text-[15px] font-bold tracking-tight text-graphite">
+            <span className="block truncate text-body font-semibold text-graphite">
               Where to tonight?
             </span>
-            <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-graphite-muted">
+            <span className="mt-0.5 flex items-center gap-1.5 text-meta text-graphite-muted">
               Maastricht
               <span className="text-line">·</span>
               <span className="inline-flex items-center gap-1 font-medium text-graphite-soft">
@@ -91,12 +90,9 @@ export default function SearchCapsule({
               </span>
             </span>
           </span>
-          <span className="shrink-0 pr-1">
-            <Avatar person={currentUser} size={34} />
-          </span>
         </button>
       ) : (
-        <div className="mn-control animate-fade overflow-hidden rounded-[22px]">
+        <div className="mn-control animate-fade overflow-hidden rounded-3xl">
           <div className="flex h-14 items-center gap-3 pl-4 pr-2">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-graphite text-surface">
               <SearchIcon size={15} strokeWidth={2.4} />
@@ -106,7 +102,7 @@ export default function SearchCapsule({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search places, vibes, streets"
-              className="min-w-0 flex-1 bg-transparent text-[15px] font-medium tracking-tight text-graphite outline-none placeholder:text-graphite-muted"
+              className="min-w-0 flex-1 bg-transparent text-body font-medium text-graphite outline-none placeholder:text-graphite-muted"
               aria-label="Search places"
             />
             <button
@@ -119,11 +115,11 @@ export default function SearchCapsule({
             </button>
           </div>
           <div className="border-t border-line/80">
-            <div className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-graphite-muted">
+            <div className="px-4 pb-1 pt-3 text-caption uppercase text-graphite-muted">
               {q.trim() ? "Results" : "Popular now"}
             </div>
             {results.length === 0 ? (
-              <p className="px-4 pb-4 pt-1 text-[13px] text-graphite-muted">
+              <p className="px-4 pb-4 pt-1 text-meta text-graphite-muted">
                 Nothing matches tonight. Try a street or a vibe.
               </p>
             ) : (
@@ -138,20 +134,18 @@ export default function SearchCapsule({
                       }}
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-2"
                     >
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${
-                          v.isPrivate ? "bg-violet" : "bg-cobalt"
-                        }`}
-                      />
+                      {v.isPrivate && (
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-violet" />
+                      )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-semibold tracking-tight text-graphite">
+                        <span className="block truncate text-body font-semibold text-graphite">
                           {v.name}
                         </span>
-                        <span className="block truncate text-[12px] text-graphite-muted">
+                        <span className="block truncate text-meta text-graphite-muted">
                           {categoryLabel(v)} · {v.time}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[13px] font-bold tabular-nums text-graphite">
+                      <span className="shrink-0 text-meta font-semibold tabular-nums text-graphite">
                         {count}
                         <span className="ml-1 font-medium text-graphite-muted">
                           going

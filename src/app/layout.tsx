@@ -1,8 +1,25 @@
 import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+// Self-hosted at build time by next/font; exposed as --font-geist for @theme.
+const geist = Geist({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-geist",
+  display: "swap",
+});
+
+// Times and counts on desktop (tabular by design); exposed as --font-geist-mono.
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "MaasNow — Maastricht, tonight",
+  title: "maasnow — Maastricht, tonight",
   description: "See where Maastricht is going tonight.",
 };
 
@@ -19,7 +36,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
       <body>{children}</body>
     </html>
   );

@@ -46,16 +46,8 @@ export default function EventSheet({
         ? people[venue.hostId]
         : null;
   const isHost = venue.hostId === currentUser.id;
-  const accent = venue.isPrivate
-    ? "text-violet"
-    : venue.busy
-      ? "text-orange"
-      : "text-lime-deep";
-  const dot = venue.isPrivate
-    ? "bg-violet"
-    : venue.busy
-      ? "bg-orange"
-      : "bg-lime";
+  // Only private gets a color; category and "busy" stay neutral.
+  const accent = venue.isPrivate ? "text-violet" : "text-graphite-soft";
 
   const categoryLabel =
     venue.category === "private"
@@ -99,9 +91,11 @@ export default function EventSheet({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div
-                className={`flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wider ${accent}`}
+                className={`flex items-center gap-1.5 text-caption uppercase ${accent}`}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                {venue.isPrivate && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-violet" />
+                )}
                 {venue.isPrivate
                   ? `Private · hosted by ${host?.name ?? "a friend"}`
                   : venue.openJoin
@@ -110,10 +104,10 @@ export default function EventSheet({
                       ? `${categoryLabel} · busy now`
                       : categoryLabel}
               </div>
-              <h2 className="mt-1 truncate text-[24px] font-bold leading-tight tracking-tight text-graphite">
+              <h2 className="mt-1 truncate text-title text-graphite">
                 {venue.name}
               </h2>
-              <p className="mt-0.5 text-[13px] text-graphite-muted">
+              <p className="mt-0.5 text-meta text-graphite-muted">
                 {venue.address}
               </p>
             </div>
@@ -139,26 +133,26 @@ export default function EventSheet({
 
           <dl className="mt-4 grid grid-cols-3 gap-2 border-y border-line/80 py-3">
             <div>
-              <dt className="text-[11px] uppercase tracking-wider text-graphite-muted">
+              <dt className="text-caption uppercase text-graphite-muted">
                 Time
               </dt>
-              <dd className="mt-0.5 text-[14px] font-semibold tabular-nums text-graphite">
+              <dd className="mt-0.5 text-body font-semibold tabular-nums text-graphite">
                 {venue.time}
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase tracking-wider text-graphite-muted">
+              <dt className="text-caption uppercase text-graphite-muted">
                 Vibe
               </dt>
-              <dd className="mt-0.5 text-[14px] font-semibold leading-snug text-graphite">
+              <dd className="mt-0.5 text-body font-semibold text-graphite">
                 {venue.vibe}
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase tracking-wider text-graphite-muted">
+              <dt className="text-caption uppercase text-graphite-muted">
                 Price
               </dt>
-              <dd className="mt-0.5 text-[14px] font-semibold text-graphite">
+              <dd className="mt-0.5 text-body font-semibold text-graphite">
                 <span>{priceLabel(venue.price)}</span>
                 <span className="text-line">
                   {"€".repeat(3 - venue.price)}
@@ -167,7 +161,7 @@ export default function EventSheet({
             </div>
           </dl>
 
-          <p className="mt-3 text-[14px] leading-relaxed text-graphite-soft">
+          <p className="mt-3 text-body text-graphite-soft">
             {venue.description}
           </p>
 
@@ -182,16 +176,16 @@ export default function EventSheet({
                 <AvatarStack people={venue.friendsGoing} size={30} />
               )}
               <span className="leading-tight">
-                <span className="block text-[15px] font-bold tabular-nums tracking-tight text-graphite">
+                <span className="block text-body font-semibold tabular-nums text-graphite">
                   {allGoing}{" "}
                   <span className="font-medium text-graphite-muted">going</span>
                 </span>
-                <span className="block text-[12px] text-graphite-muted">
+                <span className="block text-meta text-graphite-muted">
                   {friendLine}
                 </span>
               </span>
             </span>
-            <span className="flex shrink-0 items-center gap-1 pr-1 text-[12px] font-semibold text-cobalt">
+            <span className="flex shrink-0 items-center gap-1 pr-1 text-meta font-semibold text-graphite">
               All
               <svg
                 width="14"
@@ -212,21 +206,21 @@ export default function EventSheet({
           {isHost ? (
             confirmDelete && onDelete ? (
               <div className="mt-4">
-                <p className="text-center text-[13px] font-medium text-graphite-soft">
+                <p className="text-center text-meta font-medium text-graphite-soft">
                   Delete “{venue.name}”? This removes it from the map.
                 </p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(false)}
-                    className="h-12 rounded-2xl bg-surface-2 text-[15px] font-semibold text-graphite-soft hover:bg-line active:scale-[0.98]"
+                    className="h-12 rounded-2xl bg-surface-2 text-body font-semibold text-graphite-soft hover:bg-line active:scale-[0.98]"
                   >
                     Keep it
                   </button>
                   <button
                     type="button"
                     onClick={onDelete}
-                    className="h-12 rounded-2xl bg-graphite text-[15px] font-bold text-surface hover:brightness-110 active:scale-[0.98]"
+                    className="h-12 rounded-2xl bg-graphite text-body font-semibold text-surface hover:brightness-110 active:scale-[0.98]"
                   >
                     Delete event
                   </button>
@@ -234,7 +228,7 @@ export default function EventSheet({
               </div>
             ) : (
               <div className="mt-4 flex items-center gap-2">
-                <div className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-graphite text-[15px] font-bold tracking-tight text-lime">
+                <div className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-graphite text-body font-semibold text-lime">
                   You’re hosting
                 </div>
                 {onDelete && (
@@ -269,7 +263,7 @@ export default function EventSheet({
               onClick={onToggleGoing}
               aria-pressed={going}
               className={[
-                "mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold tracking-tight transition-all active:scale-[0.98]",
+                "mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-body font-semibold transition-all active:scale-[0.98]",
                 going
                   ? "bg-graphite text-lime"
                   : venue.isPrivate

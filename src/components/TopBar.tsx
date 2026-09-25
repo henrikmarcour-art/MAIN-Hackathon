@@ -33,7 +33,7 @@ export default function TopBar({
   onPick,
 }: Props) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 pt-[max(12px,env(safe-area-inset-top))] md:pt-6">
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(12px,env(safe-area-inset-top))] md:pt-6">
       {/* Mobile */}
       <div className="flex flex-col gap-2.5 md:hidden">
         <SearchCapsule
@@ -44,7 +44,9 @@ export default function TopBar({
           onPick={onPick}
           className="px-3"
         />
-        <DiscoveryChips filter={filter} onFilter={onFilter} className="px-3" />
+        <div className="px-3">
+          <DiscoveryChips filter={filter} onFilter={onFilter} menuAlign="end" />
+        </div>
       </div>
 
       {/* Desktop */}
@@ -58,10 +60,10 @@ export default function TopBar({
           filter={filter}
           crowd={crowd}
           onPick={onPick}
-          className="w-[420px]"
+          className="w-[340px] lg:w-[400px]"
         />
-        <div className="flex justify-end">
-          <DiscoveryChips filter={filter} onFilter={onFilter} />
+        <div className="flex min-w-0 justify-end">
+          <DiscoveryChips filter={filter} onFilter={onFilter} menuAlign="end" />
         </div>
       </div>
     </div>

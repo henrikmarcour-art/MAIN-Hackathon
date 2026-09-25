@@ -41,6 +41,8 @@ import {
   updatePreferences,
 } from "@/lib/preferences";
 import { useUserLocation, type UserPosition } from "@/lib/use-user-location";
+import { useDesktop } from "@/lib/use-desktop";
+import DesktopShell from "@/components/DesktopShell";
 
 // MapLibre touches `window`; load it client-side only.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -49,6 +51,8 @@ const MapView = dynamic(() => import("@/components/MapView"), {
 });
 
 export default function Home() {
+  // ≥ 1024 px gets the desktop system (panel + map); null until hydrated.
+  const isDesktop = useDesktop();
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -235,11 +239,14 @@ export default function Home() {
     [timedVenues, filter, goingIds]
   );
 
+  // Mobile hides venues outside the chosen time, so drop a selection that
+  // vanished. Desktop only dims them (DesktopShell owns its own list).
   useEffect(() => {
+    if (isDesktop !== false) return;
     if (selectedId && !filteredVenues.some((v) => v.id === selectedId)) {
       setSelectedId(null);
     }
-  }, [filteredVenues, selectedId]);
+  }, [filteredVenues, selectedId, isDesktop]);
 
   const selected = useMemo(
     () => filteredVenues.find((v) => v.id === selectedId) ?? null,
@@ -320,26 +327,13 @@ export default function Home() {
     }
   }, [invitedVenueIds]);
 
-  const acceptInvite = useCallback(() => {
-    if (!openInvite) return;
-    const venueId = openInvite.venueId;
+  /** Accepting an invitation means you're going (local only, Phase 1). */
+  const acceptVenueInvite = useCallback((venueId: string) => {
     setAcceptedVenueIds((prev) => new Set(prev).add(venueId));
     setGoingIds((prev) => new Set(prev).add(venueId));
-    setOpenInviteId(null);
-    setFilter("all");
-    setTab("map");
-    setMapPickActive(false);
-    setMapPick(null);
-    // Let the marker mount, then focus it.
-    setTimeout(() => {
-      setSelectedId(venueId);
-      setFocusId(venueId);
-    }, 50);
-  }, [openInvite]);
+  }, []);
 
-  const declineInvite = useCallback(() => {
-    if (!openInvite) return;
-    const venueId = openInvite.venueId;
+  const declineVenueInvite = useCallback((venueId: string) => {
     setAcceptedVenueIds((prev) => {
       if (!prev.has(venueId)) return prev;
       const next = new Set(prev);
@@ -352,8 +346,29 @@ export default function Home() {
       next.delete(venueId);
       return next;
     });
+  }, []);
+
+  const acceptInvite = useCallback(() => {
+    if (!openInvite) return;
+    const venueId = openInvite.venueId;
+    acceptVenueInvite(venueId);
     setOpenInviteId(null);
-  }, [openInvite]);
+    setFilter("all");
+    setTab("map");
+    setMapPickActive(false);
+    setMapPick(null);
+    // Let the marker mount, then focus it.
+    setTimeout(() => {
+      setSelectedId(venueId);
+      setFocusId(venueId);
+    }, 50);
+  }, [openInvite, acceptVenueInvite]);
+
+  const declineInvite = useCallback(() => {
+    if (!openInvite) return;
+    declineVenueInvite(openInvite.venueId);
+    setOpenInviteId(null);
+  }, [openInvite, declineVenueInvite]);
 
   const handleCreate = useCallback((venue: Venue) => {
     // Optimistic: show it immediately, then persist so it survives a
@@ -407,8 +422,53 @@ export default function Home() {
 
   const showTopBar = tab !== "profile" && !mapPickActive;
 
+  const deskTab = tab === "profile" || tab === "create" ? tab : "map";
+
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-surface-2">
+    <main
+      className="mn-ui relative h-dvh w-full overflow-hidden bg-surface-2"
+      // Set only after hydration: the stored map style is client-only.
+      data-mode={isDesktop === null ? undefined : mapStyle}
+    >
+      {isDesktop === true && (
+        <DesktopShell
+          venues={visibleVenues}
+          goingIds={goingIds}
+          onToggleGoing={toggleGoing}
+          acceptedVenueIds={acceptedVenueIds}
+          onAcceptInvite={acceptVenueInvite}
+          onDeclineInvite={declineVenueInvite}
+          selectedId={selectedId}
+          onSelectedId={setSelectedId}
+          filter={filter}
+          onFilter={handleFilter}
+          mapStyle={mapStyle}
+          onMapStyle={chooseMapStyle}
+          clockTick={clockTick}
+          userPosition={userPosition}
+          locationStatus={locationStatus}
+          centeredOnUser={centeredOnUser}
+          onLocate={handleLocate}
+          onUserPan={stopCenteringOnUser}
+          cameraRequest={cameraRequest}
+          onCameraRequest={setCameraRequest}
+          notice={notice}
+          onDismissNotice={dismissNotice}
+          tab={deskTab}
+          onTab={setTab}
+          mapPickActive={mapPickActive}
+          mapPick={mapPick}
+          onMapPick={setMapPick}
+          onStartMapPick={startMapPick}
+          onCancelMapPick={cancelMapPick}
+          onCreate={handleCreate}
+          canDelete={canDeleteEvent}
+          onDelete={deleteVenue}
+        />
+      )}
+
+      {isDesktop === false && (
+      <>
       <MapView
         venues={filteredVenues}
         selectedId={selectedId}
@@ -585,6 +645,8 @@ export default function Home() {
           onDecline={declineInvite}
           onClose={() => setOpenInviteId(null)}
         />
+      )}
+      </>
       )}
     </main>
   );

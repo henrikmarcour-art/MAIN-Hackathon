@@ -1,0 +1,71 @@
+{
+  "projectId": "82245ec8-fee2-4b5c-ab41-0c72b45d82d3",
+  "shape": "package",
+  "pkg": "maasnow",
+  "globalName": "MaasNow",
+  "buildCmd": "node .design-sync/build.mjs",
+  "srcDir": "../../../src",
+  "tsconfig": "../../../tsconfig.json",
+  "cssEntry": "maasnow.css",
+  "runtimeFontPrefixes": [
+    "Geist"
+  ],
+  "guidelinesGlob": [
+    "../../../docs/DESIGN_SYSTEM.md",
+    "../../../docs/PRODUCT_UI_DIRECTION.md"
+  ],
+  "componentSrcMap": {
+    "AvatarStack": "../../../src/components/Avatar.tsx",
+    "InviteChip": "../../../src/components/InviteCard.tsx",
+    "TimeClock": "../../../src/components/map/TimeScrubber.tsx",
+    "SearchIcon": null,
+    "LayersIcon": null,
+    "LocateIcon": null,
+    "LocateOffIcon": null,
+    "RadarIcon": null,
+    "ClockIcon": null,
+    "SunIcon": null,
+    "MoonIcon": null,
+    "UsersIcon": null,
+    "TrendIcon": null,
+    "CloseIcon": null,
+    "CheckIcon": null,
+    "ChevronIcon": null,
+    "PlusIcon": null,
+    "MinusIcon": null,
+    "BackIcon": null,
+    "LockIcon": null,
+    "FilterIcon": null
+  },
+  "overrides": {
+    "InviteCard": {
+      "cardMode": "column"
+    },
+    "MapModeSheet": {
+      "cardMode": "column"
+    },
+    "TopBar": {
+      "cardMode": "single",
+      "primaryStory": "Desktop",
+      "viewport": "1320x140"
+    },
+    "ForYouPanel": {
+      "cardMode": "column"
+    },
+    "DiscoveryRail": {
+      "cardMode": "column"
+    },
+    "MapNotice": {
+      "cardMode": "column"
+    },
+    "TimeScrubber": {
+      "cardMode": "column"
+    },
+    "BottomNav": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "tokensPkg": "../.design-sync/.cache/tokens",
+  "tokensGlob": "tokens.css"
+}

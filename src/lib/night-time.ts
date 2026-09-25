@@ -17,13 +17,18 @@ const LATE_END_HOUR = 6;
 
 export type ClockParts = { hour: number; minute: number };
 
+// Built once: creating an Intl formatter is slow, and the time capsule asks
+// for the clock of every venue on every frame while scrubbing.
+let clockFormat: Intl.DateTimeFormat | null = null;
+
 export function clockInMaastricht(at: Date = new Date()): ClockParts {
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  clockFormat ??= new Intl.DateTimeFormat("en-GB", {
     timeZone: TZ,
     hour: "numeric",
     minute: "numeric",
     hourCycle: "h23",
-  }).formatToParts(at);
+  });
+  const parts = clockFormat.formatToParts(at);
   const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
   const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
   return { hour, minute };
@@ -164,4 +169,59 @@ export function liveThumbIndex(at: Date = new Date()) {
     NIGHT_HOURS.length - 1,
     Math.floor(off / 60)
   );
+}
+
+/**
+ * Minutes from `at` until the end of the night (05:00). During the day the
+ * next night is ahead, so the range runs to the coming 05:00.
+ */
+export function minutesUntilNightEnd(at: Date = new Date()) {
+  const { hour, minute } = clockInMaastricht(at);
+  const off = toNightOffset(hour, minute);
+  if (off < 0) return NIGHT_END_OFFSET - off;
+  if (off >= NIGHT_END_OFFSET) return 24 * 60 + NIGHT_END_OFFSET - off;
+  return NIGHT_END_OFFSET - off;
+}
+
+export function addMinutes(at: Date, minutes: number) {
+  return new Date(at.getTime() + minutes * 60 * 1000);
+}
+
+/** "22:40" in Maastricht time. */
+export function clockLabel(at: Date) {
+  const { hour, minute } = clockInMaastricht(at);
+  return formatClock(hour, minute);
+}
+
+/** Where a venue is at `at`: on now, starting soon/later, or closed. */
+export type VenueTimeState =
+  | { kind: "open"; until: string }
+  | { kind: "soon"; inMinutes: number }
+  | { kind: "later"; from: string }
+  | { kind: "closed" };
+
+export function venueTimeState(venue: Venue, at: Date): VenueTimeState {
+  const span = parseVenueSpan(venue.time);
+  if (!span) return { kind: "closed" };
+  const { hour, minute } = clockInMaastricht(at);
+  const t = toNightOffset(hour, minute);
+  const end = span.end % (24 * 60);
+  const endLabel = formatClock(
+    Math.floor((NIGHT_START_HOUR * 60 + end) / 60) % 24,
+    end % 60
+  );
+  if (span.start <= t && t < span.end) return { kind: "open", until: endLabel };
+  if (span.start > t) {
+    const d = span.start - t;
+    if (d <= 60) return { kind: "soon", inMinutes: d };
+    const s = NIGHT_START_HOUR * 60 + span.start;
+    return { kind: "later", from: formatClock(Math.floor(s / 60) % 24, s % 60) };
+  }
+  return { kind: "closed" };
+}
+
+/** Open now, or opening within the hour: what the map keeps at full strength. */
+export function isAvailableAt(venue: Venue, at: Date) {
+  const s = venueTimeState(venue, at);
+  return s.kind === "open" || s.kind === "soon";
 }

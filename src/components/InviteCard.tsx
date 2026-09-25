@@ -16,18 +16,37 @@ export function InviteChip({ invitation, venue, onOpen }: ChipProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="animate-fade pointer-events-auto flex w-[min(100%,320px)] shrink-0 items-center gap-3 rounded-full border border-violet/30 bg-surface/95 py-1.5 pl-1.5 pr-4 text-left shadow-float backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      className="animate-fade pointer-events-auto flex w-[min(100%,320px)] shrink-0 items-center gap-3 rounded-full border border-line bg-surface/95 py-1.5 pl-1.5 pr-4 text-left shadow-float backdrop-blur-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
     >
       <Avatar person={invitation.from} size={30} />
-      <span className="leading-tight">
-        <span className="block text-[13px] font-semibold tracking-tight text-graphite">
+      <span className="min-w-0">
+        <span className="block text-meta font-semibold text-graphite">
           {invitation.from.name} invited you
         </span>
-        <span className="block text-[12px] text-violet">
-          {venue.name} · {venue.time}
+        {/* Violet stays a small cue for "private", never a fill. */}
+        <span className="flex items-center gap-1 text-meta text-graphite-soft">
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0 text-violet"
+            aria-label="Private"
+            role="img"
+          >
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          <span className="truncate">
+            {venue.name} · {venue.time}
+          </span>
         </span>
       </span>
-      <span className="ml-1 h-2 w-2 rounded-full bg-violet" />
+      <span className="ml-1 h-2 w-2 shrink-0 rounded-full bg-violet" />
     </button>
   );
 }

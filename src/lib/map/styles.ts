@@ -3,6 +3,8 @@ import type {
   SourceSpecification,
   StyleSpecification,
 } from "maplibre-gl";
+import { osmPlaces } from "@/data/maastricht-places";
+import { venues } from "@/data/events";
 
 export type MapStyleId = "standard" | "night" | "satellite";
 
@@ -23,7 +25,8 @@ export function isDarkMapStyle(id: MapStyleId) {
  */
 export const MAP_CANVAS_COLOR: Record<MapStyleId, string> = {
   standard: "#f1eee7",
-  night: "#111214",
+  // Warm black (tokens: night-map), not blue-black.
+  night: "#12110f",
   satellite: "#1b1c1e",
 };
 
@@ -67,14 +70,79 @@ export function placeholderStyle(id: MapStyleId): StyleSpecification {
   };
 }
 
+export type BuildOptions = {
+  /** Desktop: draw every other known place as a quiet speck. */
+  places?: boolean;
+};
+
 export function buildMapStyle(
   id: MapStyleId,
-  base: StyleSpecification
+  base: StyleSpecification,
+  { places = false }: BuildOptions = {}
 ): StyleSpecification {
   const quiet = quietStyle(base);
-  if (id === "night") return nightStyle(quiet);
-  if (id === "satellite") return satelliteStyle(quiet);
-  return quiet;
+  const style =
+    id === "night" ? nightStyle(quiet) : id === "satellite" ? satelliteStyle(quiet) : quiet;
+  return withPlaces(style, id, places);
+}
+
+// ---------------------------------------------------------------------------
+// Quiet specks (desktop): the ~130 OpenStreetMap bars, cafés and restaurants
+// that aren't one of tonight's venues, as tiny points. They say "the city is
+// full of places" without competing with the venues MaasNow pins itself.
+// A map layer, not DOM markers, so they cost nothing while scrubbing time.
+// ---------------------------------------------------------------------------
+
+export const PLACES_LAYER_ID = "mn-places";
+
+const VENUE_NAMES = new Set(venues.map((v) => v.name.toLowerCase()));
+
+const PLACES_GEOJSON = {
+  type: "FeatureCollection" as const,
+  features: osmPlaces
+    .filter((p) => !VENUE_NAMES.has(p.name.toLowerCase()))
+    .map((p) => ({
+      type: "Feature" as const,
+      properties: {},
+      geometry: { type: "Point" as const, coordinates: [p.lng, p.lat] },
+    })),
+};
+
+const SPECK: Record<MapStyleId, { color: string; opacity: number; stroke: string }> = {
+  standard: { color: "#0e0e10", opacity: 0.4, stroke: "rgba(255,255,255,0.9)" },
+  night: { color: "#ffe9cc", opacity: 0.36, stroke: "rgba(0,0,0,0)" },
+  satellite: { color: "#ffffff", opacity: 0.6, stroke: "rgba(0,0,0,0.7)" },
+};
+
+function withPlaces(
+  style: StyleSpecification,
+  id: MapStyleId,
+  visible: boolean
+): StyleSpecification {
+  const s = SPECK[id];
+  const layer: LayerSpecification = {
+    id: PLACES_LAYER_ID,
+    type: "circle",
+    source: PLACES_LAYER_ID,
+    minzoom: 13,
+    layout: { visibility: visible ? "visible" : "none" },
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 1.2, 16, 2.2, 18, 3],
+      "circle-color": s.color,
+      "circle-opacity": s.opacity,
+      "circle-stroke-width": 0.8,
+      "circle-stroke-color": s.stroke,
+      "circle-stroke-opacity": s.opacity,
+    },
+  };
+  return {
+    ...style,
+    sources: {
+      ...style.sources,
+      [PLACES_LAYER_ID]: { type: "geojson", data: PLACES_GEOJSON },
+    },
+    layers: [...style.layers, layer],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -174,28 +242,30 @@ export function quietStyle(base: StyleSpecification): StyleSpecification {
 // theme) so pins and the lime "you" states carry the screen after dark.
 // ---------------------------------------------------------------------------
 
+// Warm darks: the approved Night mode is "sodium night without the amber",
+// warm-toned greys that sit with the warm-black panel (tokens: night-*).
 const NIGHT = {
   bg: MAP_CANVAS_COLOR.night,
-  landuse: "#141518",
-  residential: "#131417",
-  park: "#131915",
-  wood: "#121713",
-  water: "#0c1820",
-  waterLine: "#10232f",
-  building: "#1a1b1f",
-  buildingTop: "#1d1e22",
-  buildingOutline: "#232429",
-  road: "#202227",
-  roadMajor: "#2b2e35",
-  roadCasing: "#151619",
-  path: "#1b1d21",
-  rail: "#25272c",
-  boundary: "#2c2e34",
-  text: "#8e9097",
-  textStrong: "#c8cad0",
-  textWater: "#52707f",
-  landmark: "#9a9ca3",
-  halo: "#111214",
+  landuse: "#15130f",
+  residential: "#161411",
+  park: "#141510",
+  wood: "#13140f",
+  water: "#0e1113",
+  waterLine: "#141a1c",
+  building: "#1e1b17",
+  buildingTop: "#221e19",
+  buildingOutline: "#2a251f",
+  road: "#27231d",
+  roadMajor: "#342e26",
+  roadCasing: "#171510",
+  path: "#211d18",
+  rail: "#2c2720",
+  boundary: "#3a332a",
+  text: "#9c9284",
+  textStrong: "#d6cbbb",
+  textWater: "#5f6a68",
+  landmark: "#a89d8d",
+  halo: "#12110f",
 };
 
 type Paint = Record<string, unknown>;
@@ -325,9 +395,11 @@ export function satelliteStyle(quiet: StyleSpecification): StyleSpecification {
         type: "raster",
         source: "pdok-aerial",
         paint: {
-          // Slightly calmer imagery so MaasNow pins stay the loudest thing.
-          "raster-saturation": -0.12,
-          "raster-brightness-max": 0.92,
+          // Darkened about a fifth (the approved "22% scrim") and calmed, so
+          // light labels and MaasNow's pins stay the loudest thing.
+          "raster-saturation": -0.2,
+          "raster-brightness-max": 0.78,
+          "raster-contrast": 0.06,
           "raster-fade-duration": 150,
         },
       },
